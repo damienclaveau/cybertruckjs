@@ -1,0 +1,35 @@
+{
+    "name": "CybertruckJS",
+    "description": "",
+    "dependencies": {
+        "core": "*",
+        "radio": "*",
+        "microphone": "*",
+        "datalogger": "*",
+        "servo": "*",
+        "Huskylens": "github:dfrobot/pxt-dfrobot_huskylens#v2.0.7"
+    },
+    "files": [
+        "main.ts",
+        "README.md",
+        "logger.ts",
+        "controller.ts",
+        "position.ts",
+        "motion.ts",
+        "vision.ts",
+        "game.ts",
+        "robot.ts"
+    ],
+    "testFiles": [
+        "test.ts"
+    ],
+    "targetVersions": {
+        "target": "8.0.16",
+        "targetId": "microbit"
+    },
+    "supportedTargets": [
+        "microbit"
+    ],
+    "preferredEditor": "tsprj",
+    "languageRestriction": "javascript-only"
+}
