@@ -32,7 +32,7 @@ namespace vision_ns {
         static South = 2;
         static West = 3;
         static North = 4;
-        static Base = 5;
+        static Home = 5;
     }
 
     // Object Color ID as recognized by Husky ColorRecognition
@@ -121,6 +121,11 @@ namespace vision_ns {
     export function getClosestBall(): VisualObject{
         return null
     }
+
+    export function getQRCode(code: QRcodeId): VisualObject {
+        return null
+    }
+
 
     // Vision Processor Class
     export class VisionProcessor {

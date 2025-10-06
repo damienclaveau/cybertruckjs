@@ -26,13 +26,18 @@ class Robot {
                     break;                
                 case RobotState.trackingBall:
                 case RobotState.searchingBalls:
-                    vision.setMode(protocolAlgorithm.ALGORITHM_COLOR_RECOGNITION)
-                    vision.setKind(vision_ns.ObjectKind.Ball)
+                    if (HUSKY_WIRED) {
+                        vision.setMode(protocolAlgorithm.ALGORITHM_COLOR_RECOGNITION)
+                        vision.setKind(vision_ns.ObjectKind.Ball)
+                    }
+                    break;
                 case RobotState.waiting:
                 case RobotState.searchingHome:
                 case RobotState.goingHome:
-                    vision.setMode(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION)
-                    vision.setKind(vision_ns.ObjectKind.QRcode)
+                    if (HUSKY_WIRED) {
+                        vision.setMode(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION)
+                        vision.setKind(vision_ns.ObjectKind.QRcode)
+                    }
                     break
                 default:
                     break
@@ -113,12 +118,12 @@ class Robot {
     }
 
     // Motion decision
+    // Based on the Robot State, Goal and Environment
+    // Determine the next waypoint to reach, and linear and angular velocities to reach it
+    // if tracking a VisualObject : compute the angle compared to screen center
+    // if heading blindly to a direction : compute the angle compared to compass orientation
+    // if explicit movement (spinRight, spinLeft, ...) : use the compass too
     public computeNextWaypoint() {
-        // Based on the Robot State, Goal and Environment
-        // Determine the next waypoint to reach, and linear and angular velocities to reach it
-        // if tracking a VisualObject : compute the angle compared to screen center
-        // if heading blindly to a direction : compute the angle compared to compass orientation
-        // if explicit movement (spinRight, spinLeft, ...) : use the compass too
         switch (this.state) {
             case RobotState.stopped:
             case RobotState.atHome:
@@ -126,21 +131,24 @@ class Robot {
                 break
             case RobotState.searchingBalls:
                 // we are likely spinning around
-                motion.setWaypoint(10, 20)
+                motion.setWaypoint(10, 45)
                 break
             case RobotState.searchingHome:
-                // we are likely spinning around
+                // pseudo code
+                //home_direction = position.getHomeDirection
+                //waypoint = compass.heading - home_direction
+                // or likely spinning around
                 break
             case RobotState.trackingBall:
                 // waypoint == closest ball on Camera
-                let vo  = vision_ns.getClosestBall();
-                if (vo!=null)
-                    motion.setWaypoint(vo.getDistance(), vo.getAngle())
+                let b  = vision_ns.getClosestBall();
+                if (b!=null)
+                    motion.setWaypoint(b.getDistance(), b.getAngle())
                 else 
-                    logger.log("Tracking Fantom ball !")
+                    logger.log("Tracking a Fantom ball !")
                 break
             case RobotState.goingHome:
-                // waypoint == QRCode on Camera
+                let qr = vision_ns.getQRCode(vision_ns.QRcodeId.Home)
                 break
             default:
                 break

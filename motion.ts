@@ -15,15 +15,14 @@ namespace motion {
             this.angle = angle
         }
     }
-    
-    let waypoint = new Waypoint(0,0)
 
+    let waypoint = new Waypoint(0,0)
     // 
     export function setWaypoint(distance: number, angle: number){
         waypoint.distance = distance
         waypoint.angle = angle
     }
-
+    
     /*
     ServoController.setServo(DIRECTION_SERVO, -45) //turn right
     ServoController.setServo(DIRECTION_SERVO, 0) //straight
@@ -55,7 +54,6 @@ namespace motion {
         } else {
             MotorController.setMotor(SPEED_MOTOR, speed)
         }
-
     }
 
 }
