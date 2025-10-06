@@ -35,55 +35,58 @@ class BricksGame {
     }
     public doStart() {
         if (this.mode == GameMode.Slave) {
-            // Acknowledge the command
-            //UTBController.sendActionStart()
             this.setState(GameState.Started)
             this.startTime = control.millis()
             robot.doStart()
-            basic.showIcon(IconNames.Happy)
-            //music.setTempo(360)
-            //music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground)
+            // Acknowledge the command
+            UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.START)
+            logger.debug(">Start<")
+            music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground)
+            UTBBot.newBotStatus(UTBBotCode.BotStatus.Search)
+            basic.showLeds(`
+            . . . . .
+            . . # . .
+            . # # # .
+            # # # # #
+            . . . . .
+            `)
         }
         else {
             logger.log("Asked to Start but not in Slave mode");
         }
     }
     public doStop() {
-        // Acknowledge the command
-        //UTBController.sendActionStop()
         this.setState(GameState.Stopped)
         robot.doStop()
-        basic.showIcon(IconNames.Asleep)
-        //music.setTempo(360)
-        //music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
+        // Acknowledge the command
+        UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.STOP)
+        logger.debug(">Stop<")
+        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
+        UTBBot.newBotStatus(UTBBotCode.BotStatus.Idle)
+        basic.showLeds(`
+        . . . . .
+        . # # # .
+        . # # # .
+        . # # # .
+        . . . . .
+        `)
     }
     public doDanger() {
-        // Acknowledge the command
-        //UTBController.sendActionDanger()
         robot.askGoingHome()
-        basic.showLeds(`
-            # # . # #
-            # # . # #
-            . . . . .
-            # # # # #
-            # # # # #
-            `)
-        basic.showIcon(IconNames.Surprised)
-        //music.setTempo(360)
-        //for (let index = 0; index < 4; index++) {
-        //    music._playDefaultBackground(music.builtInPlayableMelody(Melodies.BaDing), music.PlaybackMode.UntilDone)
-       // }
+        // Acknowledge the command
+        UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.DANGER)
+        logger.debug(">Danger<")
+        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.BaDing), music.PlaybackMode.InBackground)
+        UTBBot.newBotStatus(UTBBotCode.BotStatus.ToShelter)
+        basic.showIcon(IconNames.Skull)
     }
 }
 
-// Radio messages received from the controller
-function handleControllerDataReceived(receivedString: string) {
 
-}
 
 
 // Button events
-function initButtonsEvents() {
+function initButtonsEvents(){
     input.onButtonPressed(Button.A, function () {
         bricksGame.doStart()
     })
@@ -98,23 +101,41 @@ function initButtonsEvents() {
     })
     // Logo Button Long Pressed to change the radio group
     input.onLogoEvent(TouchButtonEvent.LongPressed, function () {
-        //UTBRadio.showRadioGroup()
-        //UTBRadio.incrementRadioGroup()
-        //UTBRadio.showRadioGroup()
+        UTBRadio.incrementRadioGroup()
+        UTBRadio.showRadioGroup()
     })
 }
 
-// Radio events
-serial.onDataReceived(serial.delimiters(Delimiters.NewLine), function () {
-    handleControllerDataReceived(serial.readLine())
-})
+function initGameControl() {
+    // Radio events
+    UTBBot.onMessageStartReceived(function () {
+        bricksGame.doStart()
+    })
+    UTBBot.onMessageStopReceived(function () {
+        bricksGame.doStop()
+    })
+    UTBBot.onMessageDangerReceived(function () {
+        bricksGame.doDanger()
+    })
 
-function initGameController() {
-    //UTBController.initAsController()
-    //UTBRadio.showRadioGroup()
+    let receivedString = ""
+    UTBBot.initAsBot(UTBBotCode.TeamName.TeslaCybertruck)
+    UTBBot.newBotStatus(UTBBotCode.BotStatus.Idle)
+    UTBRadio.showRadioGroup()
+    loops.everyInterval(15000, function () {
+        logger.log("<hearbeat>")
+        UTBBot.emitHeartBeat()
+    })
+    loops.everyInterval(60000, function () {
+        logger.log("<status>")
+        UTBBot.emitStatus()
+    })
 }
+
+
 /*
-//source : https://github.com/Taccart/amaker-unleash-the-brick-example/blob/master/main.ts
+source : https://github.com/Taccart/amaker-unleash-the-brick-example/blob/master/main.ts
+source : https://github.com/Taccart/amaker-unleash-the-bricks-2025-lib-usage-demo/blob/master/main.ts
 UnleashTheBricks.setLogLevel(LogLevel.Debug)
 UnleashTheBricks.setEchoToConsole(true)
 UnleashTheBricks.initCommunicationChannel(CommunicationChannel.Radio)

@@ -7,7 +7,8 @@
         "microphone": "*",
         "datalogger": "*",
         "servo": "*",
-        "Huskylens": "github:dfrobot/pxt-dfrobot_huskylens#v2.0.7"
+        "Huskylens": "github:dfrobot/pxt-dfrobot_huskylens#v2.0.7",
+        "amaker-utb-lib": "github:Taccart/amaker-unleash-the-bricks-lib#v1.0.1"
     },
     "files": [
         "main.ts",

@@ -49,8 +49,8 @@ function init() {
     basic.clearScreen();
     initButtonsEvents();
     // Boot sequence
-    //music.setVolume(255)
-    //music.playMelody(imperial_march.join(" "), 150)
+    music.setVolume(255)
+    music.playMelody(imperial_march.join(" "), 150)
     // Initialize servo controller
     ServoController.init()
     ServoController.centerAllServos()
@@ -65,6 +65,7 @@ function init() {
         if (HUSKY_WIRED) {
             vision.init();
             vision.refresh();
+            logger.initializeLogToScreen()
             logger.log("Camera connected");
         }
     }
@@ -73,7 +74,7 @@ function init() {
     //initBluetooth();
     // Initialize Radio transmition with Game Server
     if (EXEC_MODE == ExecMode.GameMode) {
-        initGameController();
+        initGameControl();
     }
     initialized = true;
     logger.log("Initialization completed");
@@ -96,10 +97,6 @@ function onEvery1s() {
 }
 function onEvery5s() {
     logger.log("Remaining time " + bricksGame.remainingTime())
-    logger.log("5s heartbeat")
-    if (EXEC_MODE == ExecMode.GameMode) {
-        //UTBBot.emitHeartBeat() // from the rules of the game
-    }
 }
 
 loops.everyInterval(100, onEvery100ms);

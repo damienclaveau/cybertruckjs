@@ -1,9 +1,21 @@
 namespace logger {
-    /**
-     * Converts elapsed milliseconds to a formatted time string
-     * @param elapsedMs - The elapsed time in milliseconds
-     * @returns Formatted string in mm:ss:ms format
-     */
+
+    // Replicate console logs to Huskylens
+    let osd_log_line = 0
+    export function initializeLogToScreen() {
+        function log_to_screen(priority: ConsolePriority, msg: string) {
+            huskylens.writeOSD(msg, 0, osd_log_line * 20)
+            osd_log_line = osd_log_line + 1
+            if (osd_log_line == 19) { osd_log_line = 1 }
+        }
+        huskylens.clearOSD;
+        console.addListener(log_to_screen)
+    }
+
+    export function debug(text: string) {
+        console.debug(text)
+    }
+    
     function formatElapsedTime(elapsedMs: number): string {
         // Ensure non-negative value
         const totalMs = Math.max(0, Math.floor(elapsedMs));

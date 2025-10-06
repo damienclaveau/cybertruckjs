@@ -43,18 +43,21 @@ class Robot {
                     break
             }
         }
-
     }
 
     // Externel explicit state changes
     public doStart() {
         logger.log("Game started at " + bricksGame.startTime + " . Starting collecting balls...")
         MotorController.setMotor(GRABBER_MOTOR, -50) //grab
+        if (EXEC_MODE == ExecMode.MakeCode)
+            servos.P2.run(100) // for visual simulation
         this.setState(RobotState.searchingBalls)
     }
     public doStop() {
         logger.log("Game Stopped. Stopping collecting balls.")
         MotorController.setMotor(GRABBER_MOTOR, 0) //stop grabbing
+        if (EXEC_MODE==ExecMode.MakeCode)
+            servos.P2.run(0) // for visual simulation
         this.setState(RobotState.stopped)
     }
     public askGoingHome() {

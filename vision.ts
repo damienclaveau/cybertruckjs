@@ -162,6 +162,7 @@ namespace vision_ns {
 
         init() {
             huskylens.initI2c();
+            huskylens.clearOSD;
             huskylens.initMode(this.mode);
         }
 

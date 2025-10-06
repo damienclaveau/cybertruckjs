@@ -31,7 +31,7 @@ namespace motion {
     MotorController.setMotor(SPEED_MOTOR, 100) //forward max speed
     */
     export function goToWaypoint() {
-        logger.log("Going to Waypoint d="+waypoint.distance+" , a="+waypoint.angle)
+        //logger.log("Going to Waypoint d="+waypoint.distance+" , a="+waypoint.angle)
         //  Drive servo and motor with PWM according to updated linear and angular velocities
         //  Set the steering servo position to aim to the waypoint
         let steering = 0
