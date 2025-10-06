@@ -1,5 +1,5 @@
 // Timing Constants
-const GAME_DURATION = 30; // seconds
+const GAME_DURATION = 40; // seconds
 const DELAY_TO_GO_HOME = 20; // seconds
 const OBJECT_LOST_DELAY = 1; // second
 // Music constants :-)
