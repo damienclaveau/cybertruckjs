@@ -1,3 +1,11 @@
+// Known bugs :
+//#1 The gamebricksGame object is always started, can not figure out why
+//#2 the getClosestBall function should determine the distance based on the y axis, the lower the closer, instead of the visual ratio
+// To do :
+//#1 Implement and Test the motion functions, for free motion (spin) and PID controlled motion(track)
+//#2 Find the proper angle for the camera in order to determine min and max distance constants, and to calibrate the QR codes detection
+//#3 Implement the occupenyGrid/positioning/triangulation algorithm based on Tags and Compass
+
 // Timing Constants
 const GAME_DURATION = 400; // seconds
 const DELAY_TO_GO_HOME = 20; // seconds
@@ -20,7 +28,6 @@ const FOR_LATER_USE_SERVO = 1
 const DIRECTION_SERVO = 2
 const GRABBER_MOTOR = 3
 const SPEED_MOTOR = 4
-const HUSKY_WIRED = true; // true if the HuskyLens is wired with I2C
 
 // Execution Mode Parameters
 enum ExecMode {
@@ -31,15 +38,16 @@ enum ExecMode {
 }
 
 // Global Variables
-let EXEC_MODE = ExecMode.WiredMode;
+const HUSKY_WIRED = false; // true if the HuskyLens is wired with I2C
+let EXEC_MODE = ExecMode.MakeCode;
 let cyclesCount = 0;
 let initialized = false;
 
 let bricksGame = new BricksGame();
 let robot = new Robot()
 let vision = new vision_ns.VisionProcessor(
-    protocolAlgorithm.ALGORITHM_TAG_RECOGNITION,
-    vision_ns.ObjectKind.QRcode
+    protocolAlgorithm.ALGORITHM_COLOR_RECOGNITION,
+    vision_ns.ObjectKind.Ball
 );
 vision.verbose = true
 
@@ -49,7 +57,7 @@ function init() {
     basic.clearScreen();
     initButtonsEvents();
     bricksGame.init();
-    //logger.log(`deviceName: ${control.deviceName()} deviceSerialNumber: ${control.deviceSerialNumber()} ramSize:${control.ramSize()}` );
+    logger.log(`deviceName: ${control.deviceName()} deviceSerialNumber: ${control.deviceSerialNumber()} ramSize:${control.ramSize()}` );
     // Boot sequence
     music.setVolume(255)
     //music.playMelody(imperial_march.join(" "), 150)
@@ -61,6 +69,7 @@ function init() {
     logger.log("Expansion board health check completed");
     // Initialize physical sensors
     if (EXEC_MODE != ExecMode.MakeCode) {
+        // this must be done separately, only once
         //input.calibrateCompass()
         input.setAccelerometerRange(AcceleratorRange.OneG)
         logger.log("Calibration completed");
@@ -71,9 +80,9 @@ function init() {
             logger.log("Camera connected");
         }
     }
-    // Disabled Bluetooth for the moment
+    // Disable Bluetooth for the moment
     // pxt build > error: conflict on yotta setting microbit-dal.bluetooth.enabled between extensions radio and bluetooth
-    //initBluetooth();
+    // initBluetooth();
     // Initialize Radio transmition with Game Server
     if (EXEC_MODE == ExecMode.GameMode) {
         initGameControl();
@@ -90,7 +99,8 @@ function onEvery100ms() {
 }
 
 function onEvery200ms() {
-    //    send_telemetry();
+    //TO DO : test this
+    //send_telemetry();
 }
 // Simulate the game countdown
 function onEvery1s() {
@@ -98,6 +108,11 @@ function onEvery1s() {
         && (bricksGame.remainingTime() < 0)) {
         bricksGame.doStop()
     }
+}
+function onEvery3s() {
+    // TO DO : Test this idea
+    // every 5s (maybe more often) have a look around at the QRCodes
+    // vision.refreshForced(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION, vision_ns.ObjectKind.QRcode)
 }
 
 function onEvery5s() {
@@ -107,6 +122,7 @@ function onEvery5s() {
 loops.everyInterval(100, onEvery100ms);
 loops.everyInterval(200, onEvery200ms);
 loops.everyInterval(1000, onEvery1s);
+loops.everyInterval(3000, onEvery3s);
 loops.everyInterval(5000, onEvery5s);
 
 function onForever() {
@@ -115,7 +131,9 @@ function onForever() {
         return;
     }
     cyclesCount++;
-    vision.refresh();
+    // TO DO : check if Huskylens capture frequency should be lower, like scheduled
+    vision.refresh(); 
+    // TO DO : test incrementally all stages
     //position.updateSensors();
     //position.updateEnvironment();
     //robot.updateObjective();

@@ -15,7 +15,7 @@ namespace motion {
 
     const fullSpeed = 100
     const cruiseSpeed = 50
-    const cruiseLinearSpeed = 100 // cm/s
+    const cruiseLinearSpeed = 30 // cm/s
     const spinSpeed = 50
     const spinAngularSpeed = 20 // degree/s
 

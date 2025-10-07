@@ -129,7 +129,7 @@ namespace vision_ns {
 
     // Vision Processor Class
     export class VisionProcessor {
-        public mode: number
+        public mode: protocolAlgorithm
         public kind: number
         public tracked: VisualObject
         public tags: VisualObject[] = [];
@@ -145,7 +145,7 @@ namespace vision_ns {
             this.bots = [];
         }
 
-        setMode(mode: number) {
+        setMode(mode: protocolAlgorithm) {
             if (this.mode !== mode) {
                 this.mode = mode;
                 huskylens.initMode(this.mode);
@@ -166,12 +166,13 @@ namespace vision_ns {
             huskylens.initMode(this.mode);
         }
 
-        refreshForced(mode: number, kind: number) {
+        refreshForced(mode: protocolAlgorithm, kind: number) {
             // Change temporarily the mode and the kind to refresh all objects once
             const saveMode = this.mode;
             const saveKind = this.kind;
             this.setMode(mode);
             this.setKind(kind);
+            pause(100);
             this.refresh();
             this.setMode(saveMode);
             this.setKind(saveKind);
@@ -224,7 +225,7 @@ namespace vision_ns {
             this.bots = [];
             // for each frame, Update the relative Position of the QR codes
             const nbFrames = huskylens.getBox(HUSKYLENSResultType_t.HUSKYLENSResultBlock);
-            if (this.verbose) { logger.log(`Objects detected : ${nbFrames}`); }
+            if (this.verbose) { if (nbFrames>0) logger.log(`Objects : ${nbFrames}`); }
             for (let i = 1; i <= nbFrames; i++) {
                 const vo = new VisualObject();
                 vo.id = huskylens.readBox_ss(i, Content3.ID);
