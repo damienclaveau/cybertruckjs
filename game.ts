@@ -2,26 +2,31 @@ enum GameMode {
     Free, // Free running Robot until OBEY gets received
     Slave, // Obey to Radio instructions
 }
-enum GameState {
-    Started,
-    Stopped,
+class GameState {
+    static readonly Started="started";
+    static readonly Stopped="stopped";
 }
 class BricksGame {
     mode: GameMode = GameMode.Free
-    state: GameState = GameState.Stopped
+    status: GameState = GameState.Stopped
     startTime: number = -1;
     constructor() {
     }
+    public init(){
+        this.mode = GameMode.Free
+        this.status = GameState.Stopped
+    }
     public remainingTime(): number {
-        if (this.state == GameState.Started) {
+        if ((this.status == GameState.Started)
+        && (this.startTime >0)) {
             return GAME_DURATION - (control.millis() - this.startTime) / 1000;
         }
         else return GAME_DURATION;// any positive number would be okay
     }
     public setState(state: GameState) {
-        if (this.state != state) {
-            this.state = state
-            logger.log("Robot State changed : " + ("" + this.state))
+        if (this.status != state) {
+            this.status = state
+            logger.log("Robot State changed : " + ("" + this.status))
         }
     }
     public doObey() {
@@ -42,7 +47,7 @@ class BricksGame {
             // Acknowledge the command
             UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.START)
             UTBBot.newBotStatus(UTBBotCode.BotStatus.Search)
-            logger.debug(">Start<")
+            logger.warning(">Start<")
             music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground)
             basic.showLeds(`
             . . . . .
@@ -62,7 +67,7 @@ class BricksGame {
         // Acknowledge the command
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.STOP)
         UTBBot.newBotStatus(UTBBotCode.BotStatus.Idle)
-        logger.debug(">Stop<")
+        logger.warning(">Stop<")
         music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
         basic.showLeds(`
         . . . . .
@@ -77,7 +82,7 @@ class BricksGame {
         // Acknowledge the command
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.DANGER)
         UTBBot.newBotStatus(UTBBotCode.BotStatus.ToShelter)
-        logger.debug(">Danger<")
+        logger.warning(">Danger<")
         music._playDefaultBackground(music.builtInPlayableMelody(Melodies.BaDing), music.PlaybackMode.InBackground)
         basic.showIcon(IconNames.Skull)
     }

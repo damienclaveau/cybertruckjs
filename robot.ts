@@ -48,7 +48,7 @@ class Robot {
     // Externel explicit state changes
     public doStart() {
         logger.log("Game started at " + bricksGame.startTime + " . Starting collecting balls...")
-        MotorController.setMotor(GRABBER_MOTOR, -50) //grab
+        MotorController.setMotor(GRABBER_MOTOR, 50) //grab
         if (EXEC_MODE == ExecMode.MakeCode)
             servos.P2.run(100) // for visual simulation
         this.setState(RobotState.searchingBalls)
@@ -84,10 +84,6 @@ class Robot {
             || (this.state == RobotState.trackingBall))) {
             logger.log("########### GO HOME ###################")
             this.doGoHome()
-        }
-        if (bricksGame.remainingTime() < 0) {
-            logger.log("########### STOP  ###################")
-            this.doStop()
         }
         // While waiting for the game to start
         // we could also spin left/right and look at the balls and QR Codes

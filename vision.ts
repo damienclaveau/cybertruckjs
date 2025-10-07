@@ -46,7 +46,7 @@ namespace vision_ns {
         static Unknown = 0;
         static Ball = 1;
         static Robot = 2;
-        static QRcode = 3;
+        static Tag = 3;
     }
 
     // Object Kind
@@ -132,7 +132,7 @@ namespace vision_ns {
         public mode: number
         public kind: number
         public tracked: VisualObject
-        public codes: VisualObject[] = [];
+        public tags: VisualObject[] = [];
         public balls: VisualObject[] = [];
         public bots: VisualObject[] = [];
         public verbose: boolean = true
@@ -140,7 +140,7 @@ namespace vision_ns {
             this.mode = mode;
             this.kind = kind;
             this.tracked = new VisualObject();
-            this.codes = [];
+            this.tags = [];
             this.balls = [];
             this.bots = [];
         }
@@ -181,7 +181,7 @@ namespace vision_ns {
         refresh() {
             // Refresh the VisionProcessor.
             huskylens.request();
-            if (this.verbose) { logger.log(`Husky (mode  ${this.mode}) captured IDs : ${huskylens.getIds()}`) }
+            //if (this.verbose) { logger.debug(`Husky (mode  ${this.mode},  ${huskylens.getIds()} known IDs)`) }
             if (this.mode === protocolAlgorithm.ALGORITHM_OBJECT_TRACKING) {
                 this.processSingleObject();
             }
@@ -219,12 +219,12 @@ namespace vision_ns {
 
         processAllObjects() {
             // Process all objects in recognition mode.
-            this.codes = [];
+            this.tags = [];
             this.balls = [];
             this.bots = [];
             // for each frame, Update the relative Position of the QR codes
             const nbFrames = huskylens.getBox(HUSKYLENSResultType_t.HUSKYLENSResultBlock);
-            if (this.verbose) { logger.log(`Objects on screen : ${nbFrames}`); }
+            if (this.verbose) { logger.log(`Objects detected : ${nbFrames}`); }
             for (let i = 1; i <= nbFrames; i++) {
                 const vo = new VisualObject();
                 vo.id = huskylens.readBox_ss(i, Content3.ID);
@@ -237,34 +237,39 @@ namespace vision_ns {
 
                 if (this.mode === protocolAlgorithm.ALGORITHM_TAG_RECOGNITION) {
                     vo.kind = ObjectKind.QRcode
-                    this.codes.push(vo);
-                    if (this.verbose) { logger.log("QR Tag found : " + vo.toString()); }
+                    this.tags.push(vo);
+                    if (this.verbose) { logger.log("Tag : " + vo.toString()); }
                 }
                 if (this.mode === protocolAlgorithm.ALGORITHM_COLOR_RECOGNITION) {
                     if (vo.id === ObjectColorID.Red) {
                         vo.kind = ObjectKind.Ball
                         this.balls.push(vo);
+                        if (this.verbose) { logger.log("Ball : " + vo.toString()); }
                     }
                     if (vo.id === ObjectColorID.Yellow) {
                         vo.kind = ObjectKind.Robot
                         this.bots.push(vo);
+                        if (this.verbose) { logger.log("Bot : " + vo.toString()); }
                     }
-                    if (this.verbose) { logger.log("Colored object found : " + vo.toString()); }
+                    
                 }
                 if (this.mode === protocolAlgorithm.OBJECTCLASSIFICATION) {
                     if (vo.id === ObjectClassID.Ball) {
                         vo.kind = ObjectKind.Ball
                         this.balls.push(vo);
+                        if (this.verbose) { logger.log("Ball : " + vo.toString()); }
                     }
                     if (vo.id === ObjectClassID.Robot) {
                         vo.kind = ObjectKind.Robot
                         this.bots.push(vo);
+                        if (this.verbose) { logger.log("Bot : " + vo.toString()); }
                     }
-                    if (vo.id === ObjectClassID.QRcode) {
+                    if (vo.id === ObjectClassID.Tag) {
                         vo.kind = ObjectKind.QRcode
-                        this.codes.push(vo);
+                        this.tags.push(vo);
+                        if (this.verbose) { logger.log("Tag : " + vo.toString()); }
                     }
-                    if (this.verbose) { logger.log("Shaped object found : " + vo.toString()); }
+                    
                 }
             }
         }

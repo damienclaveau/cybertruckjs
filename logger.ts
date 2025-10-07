@@ -1,21 +1,35 @@
 namespace logger {
 
     // Replicate console logs to Huskylens
-    let osd_log_line = 0
-    export function initializeLogToScreen() {
-        function log_to_screen(priority: ConsolePriority, msg: string) {
-            huskylens.writeOSD(msg, 0, osd_log_line * 20)
-            osd_log_line = osd_log_line + 1
-            if (osd_log_line == 19) { osd_log_line = 1 }
-        }
-        huskylens.clearOSD;
-        console.addListener(log_to_screen)
+    // (only warnings and errors)
+    let osd_log_line_nb = 0
+    export function log_osd(priority: ConsolePriority, msg: string) {
+        if ((HUSKY_WIRED) && (priority == ConsolePriority.Warning || priority==ConsolePriority.Error))
+            huskylens.writeOSD(msg, 0, osd_log_line_nb * 20)
+        osd_log_line_nb = osd_log_line_nb + 1
+        if (osd_log_line_nb == 19) { osd_log_line_nb = 1 }
     }
 
-    export function debug(text: string) {
-        console.debug(text)
+    export function initializeLogToScreen() {
+        if (HUSKY_WIRED) {
+            huskylens.clearOSD;
+            console.addListener(log_osd)
+        }
     }
-    
+
+    export function error(msg: string){
+        console.error(msg)
+    }
+    export function warning(msg: string) {
+        console.warn(msg)
+    }
+    export function info(msg: string) {
+        console.log(msg)
+    }
+    export function debug(msg: string) {
+        console.debug(msg)
+    }
+
     function formatElapsedTime(elapsedMs: number): string {
         // Ensure non-negative value
         const totalMs = Math.max(0, Math.floor(elapsedMs));
@@ -39,8 +53,7 @@ namespace logger {
         switch (EXEC_MODE) {
             case ExecMode.MakeCode:
             case ExecMode.WiredMode:
-                serial.writeLine(msg);
-                //console.log(msg);
+                console.log(msg);
                 break;
             case ExecMode.GameMode:
             case ExecMode.FreeMode:

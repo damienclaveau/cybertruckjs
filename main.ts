@@ -1,5 +1,5 @@
 // Timing Constants
-const GAME_DURATION = 40; // seconds
+const GAME_DURATION = 400; // seconds
 const DELAY_TO_GO_HOME = 20; // seconds
 const OBJECT_LOST_DELAY = 1; // second
 // Music constants :-)
@@ -20,7 +20,7 @@ const FOR_LATER_USE_SERVO = 1
 const DIRECTION_SERVO = 2
 const GRABBER_MOTOR = 3
 const SPEED_MOTOR = 4
-const HUSKY_WIRED = false; // true if the HuskyLens is wired with I2C
+const HUSKY_WIRED = true; // true if the HuskyLens is wired with I2C
 
 // Execution Mode Parameters
 enum ExecMode {
@@ -31,7 +31,7 @@ enum ExecMode {
 }
 
 // Global Variables
-let EXEC_MODE = ExecMode.MakeCode;
+let EXEC_MODE = ExecMode.WiredMode;
 let cyclesCount = 0;
 let initialized = false;
 
@@ -41,17 +41,18 @@ let vision = new vision_ns.VisionProcessor(
     protocolAlgorithm.ALGORITHM_TAG_RECOGNITION,
     vision_ns.ObjectKind.QRcode
 );
-vision.verbose = false
+vision.verbose = true
 
 
 function init() {
     // Initialization of the sensors, variables, display, callbacks
     basic.clearScreen();
     initButtonsEvents();
-    console.log(`deviceName: ${control.deviceName()} deviceSerialNumber: ${control.deviceSerialNumber()} ramSize:${control.ramSize()}` );
+    bricksGame.init();
+    //logger.log(`deviceName: ${control.deviceName()} deviceSerialNumber: ${control.deviceSerialNumber()} ramSize:${control.ramSize()}` );
     // Boot sequence
     music.setVolume(255)
-    music.playMelody(imperial_march.join(" "), 150)
+    //music.playMelody(imperial_march.join(" "), 150)
     // Initialize servo controller
     ServoController.init()
     ServoController.centerAllServos()
@@ -60,7 +61,7 @@ function init() {
     logger.log("Expansion board health check completed");
     // Initialize physical sensors
     if (EXEC_MODE != ExecMode.MakeCode) {
-        input.calibrateCompass()
+        //input.calibrateCompass()
         input.setAccelerometerRange(AcceleratorRange.OneG)
         logger.log("Calibration completed");
         if (HUSKY_WIRED) {
@@ -79,10 +80,9 @@ function init() {
     }
     initialized = true;
     logger.log("Initialization completed");
-
 }
-init();
 
+init();
 
 // scheduled function calls
 function onEvery100ms() {
@@ -92,12 +92,16 @@ function onEvery100ms() {
 function onEvery200ms() {
     //    send_telemetry();
 }
-
+// Simulate the game countdown
 function onEvery1s() {
-    // Function called every 500ms
+    if ((bricksGame.status = GameState.Started)
+        && (bricksGame.remainingTime() < 0)) {
+        bricksGame.doStop()
+    }
 }
+
 function onEvery5s() {
-    logger.log("Remaining time " + bricksGame.remainingTime())
+    logger.log("Game " + bricksGame.status+ ", Remaining time " + bricksGame.remainingTime())
 }
 
 loops.everyInterval(100, onEvery100ms);
@@ -112,11 +116,11 @@ function onForever() {
     }
     cyclesCount++;
     vision.refresh();
-    position.updateSensors();
-    position.updateEnvironment();
-    robot.updateObjective();
-    robot.computeNextWaypoint();
-    motion.goToWaypoint();
+    //position.updateSensors();
+    //position.updateEnvironment();
+    //robot.updateObjective();
+    //robot.computeNextWaypoint();
+    //motion.goToWaypoint();
 }
 
 // best effort loop
