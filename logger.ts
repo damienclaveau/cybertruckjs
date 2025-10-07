@@ -27,11 +27,11 @@ namespace logger {
         const formattedMinutes = (minutes < 10 ? "0" : "") + minutes.toString();
         const formattedSeconds = (seconds < 10 ? "0" : "") + seconds.toString();
         const formattedMs = (milliseconds < 100 ? (milliseconds < 10 ? "00" : "0") : "") + milliseconds.toString();
-        return `${formattedMinutes}:${formattedSeconds}:${formattedMs}`;
+        return `${formattedMinutes}m${formattedSeconds}s${formattedMs}ms`;
     }
 
     function get_log_msg(logmsg: string): string {
-        return "[" + control.deviceName() + "@" + ("" + ("" + formatElapsedTime(control.millis()))) + " (" + cyclesCount + ")]" + " : " + logmsg
+        return "[" + control.deviceName() + "@" + ("" + ("" + formatElapsedTime(control.millis()))) + " (" + cyclesCount + ")]" + " " + logmsg
     }
     // Logging function to Serial Monitor or Bluetooth
     export function log(msg: string) {

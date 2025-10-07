@@ -26,7 +26,8 @@ class BricksGame {
     }
     public doObey() {
         // Acknowledge the command
-        //UTBController.sendObeyMe()
+        UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.IOBEY)
+        UTBBot.newBotStatus(UTBBotCode.BotStatus.Idle)
         this.mode = GameMode.Slave
         basic.showIcon(IconNames.Angry)
         //music.setTempo(360)
@@ -40,9 +41,9 @@ class BricksGame {
             robot.doStart()
             // Acknowledge the command
             UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.START)
+            UTBBot.newBotStatus(UTBBotCode.BotStatus.Search)
             logger.debug(">Start<")
             music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground)
-            UTBBot.newBotStatus(UTBBotCode.BotStatus.Search)
             basic.showLeds(`
             . . . . .
             . . # . .
@@ -60,9 +61,9 @@ class BricksGame {
         robot.doStop()
         // Acknowledge the command
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.STOP)
+        UTBBot.newBotStatus(UTBBotCode.BotStatus.Idle)
         logger.debug(">Stop<")
         music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
-        UTBBot.newBotStatus(UTBBotCode.BotStatus.Idle)
         basic.showLeds(`
         . . . . .
         . # # # .
@@ -75,9 +76,9 @@ class BricksGame {
         robot.askGoingHome()
         // Acknowledge the command
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.DANGER)
+        UTBBot.newBotStatus(UTBBotCode.BotStatus.ToShelter)
         logger.debug(">Danger<")
         music._playDefaultBackground(music.builtInPlayableMelody(Melodies.BaDing), music.PlaybackMode.InBackground)
-        UTBBot.newBotStatus(UTBBotCode.BotStatus.ToShelter)
         basic.showIcon(IconNames.Skull)
     }
 }

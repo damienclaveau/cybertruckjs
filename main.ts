@@ -48,6 +48,7 @@ function init() {
     // Initialization of the sensors, variables, display, callbacks
     basic.clearScreen();
     initButtonsEvents();
+    console.log(`deviceName: ${control.deviceName()} deviceSerialNumber: ${control.deviceSerialNumber()} ramSize:${control.ramSize()}` );
     // Boot sequence
     music.setVolume(255)
     music.playMelody(imperial_march.join(" "), 150)

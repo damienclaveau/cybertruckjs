@@ -68,6 +68,7 @@ class Robot {
         logger.log("Going home. If location unknown, look for it.")
         // no more balls, or time is over, or acknolewdging danger mode
         this.setState(RobotState.searchingHome)
+        
     }
 
     // Autonomous decision making
@@ -79,9 +80,8 @@ class Robot {
         //  (TO DO : consider distance_to_home)
         //logger.log("Remaining time " + bricksGame.remainingTime())
         if ((bricksGame.remainingTime() < DELAY_TO_GO_HOME)
-            && (this.state != RobotState.searchingHome)
-            && (this.state != RobotState.goingHome)
-            && (this.state != RobotState.atHome)) {
+            &&((this.state == RobotState.searchingBalls)
+            || (this.state == RobotState.trackingBall))) {
             logger.log("########### GO HOME ###################")
             this.doGoHome()
         }
@@ -104,6 +104,7 @@ class Robot {
         }
         if (this.state == RobotState.trackingBall) {
             if (vision.balls.length == 0) {
+                UTBBot.incrementCollectedBallsCount(1);
                 logger.log("Previous ball LOST or COLLECTED. Back to searching...(on screen Balls: " + vision.balls.length + ")")
                 this.setState(RobotState.searchingBalls)
             }
