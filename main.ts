@@ -39,7 +39,7 @@ enum ExecMode {
 
 // Global Variables
 const HUSKY_WIRED = false; // true if the HuskyLens is wired with I2C
-let EXEC_MODE = ExecMode.MakeCode;
+let EXEC_MODE = ExecMode.MakeCode; // change this to WiredMode in order to have the logging on serial
 let cyclesCount = 0;
 let initialized = false;
 
