@@ -225,7 +225,7 @@ namespace vision_ns {
             this.bots = [];
             // for each frame, Update the relative Position of the QR codes
             const nbFrames = huskylens.getBox(HUSKYLENSResultType_t.HUSKYLENSResultBlock);
-            if (this.verbose) { if (nbFrames>0) logger.log(`Objects : ${nbFrames}`); }
+            if (this.verbose || (nbFrames > 0)) { logger.log(`Objects : ${nbFrames}`); }
             for (let i = 1; i <= nbFrames; i++) {
                 const vo = new VisualObject();
                 vo.id = huskylens.readBox_ss(i, Content3.ID);

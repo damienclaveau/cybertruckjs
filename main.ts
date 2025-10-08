@@ -7,8 +7,8 @@
 //#3 Implement the occupenyGrid/positioning/triangulation algorithm based on Tags and Compass
 
 // Timing Constants
-const GAME_DURATION = 400; // seconds
-const DELAY_TO_GO_HOME = 20; // seconds
+const GAME_DURATION = 40; // seconds
+const DELAY_TO_GO_HOME = 15; // seconds
 const OBJECT_LOST_DELAY = 1; // second
 // Music constants :-)
 const imperial_march = [
@@ -104,7 +104,7 @@ function onEvery200ms() {
 }
 // Simulate the game countdown
 function onEvery1s() {
-    if ((bricksGame.status = GameState.Started)
+    if ((bricksGame.status == GameState.Started)
         && (bricksGame.remainingTime() < 0)) {
         bricksGame.doStop()
     }
@@ -136,7 +136,7 @@ function onForever() {
     // TO DO : test incrementally all stages
     //position.updateSensors();
     //position.updateEnvironment();
-    //robot.updateObjective();
+    robot.updateObjective();
     //robot.computeNextWaypoint();
     //motion.goToWaypoint();
 }
