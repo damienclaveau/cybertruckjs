@@ -101,7 +101,6 @@ namespace vision_ns {
                 return ScreenSide.Middle;
             }
         }
-
         // Compute distance of the TrackedObject based on the visual size ratio
         getDistance() {
             const size = Math.sqrt(this.w ** 2 + this.h ** 2); // frame diagonal
@@ -117,7 +116,11 @@ namespace vision_ns {
             return Math.atan2(deltaX, deltaY);
         }
     }
-
+    ////////////////////////////////////////////////////////
+    // !!!!!!!!!!!! The getDistance function is wrong
+    // we should evaluate the distance based on the Y axis
+    // (bottom of screen = close, top of screen = far)
+    ///////////////////////////////////////////////////////
     export function getClosestBall(): VisualObject{
         return null
     }
