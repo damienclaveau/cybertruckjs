@@ -72,10 +72,22 @@ namespace logger {
     export function send_telemetry() {
         //  Log metrics and update Display
         if (HUSKY_WIRED) {
-            //    huskylens.writeOSD("angle diff "+str(steering_angle), 150, 30)
-            //    huskylens.writeOSD("servo_angle "+str(servo_angle), 150, 60)
-            //    huskylens.writeOSD("input "+str(steering_value), 150, 90)
-            huskylens.writeOSD("balls " + ("" + vision.balls.length), 150, 120)
+            if(robot != null) {
+                huskylens.writeOSD("state " + robot.state, 150, 30)
+            } 
+            let wp = motion.getWaypoint()
+            if (wp != null) {
+                huskylens.writeOSD("WP " + wp.distance + " " + wp.angle, 150, 30)
+            }
+            if (vision != null) {
+                huskylens.writeOSD("tags " + vision.tags.length, 150, 90)
+                huskylens.writeOSD("balls " + vision.balls.length, 150, 120)
+                let b = vision.getClosestBall();
+                if (b != null) {
+                    huskylens.writeOSD("ball dist: " + b.getDistanceInPixels(), 150, 150)
+                    huskylens.writeOSD("ball angl: " + b.getAngleDegrees(), 150, 180)
+                }
+            }
         }
 
         if ([ExecMode.MakeCode, ExecMode.WiredMode].indexOf(EXEC_MODE) >= 0) {

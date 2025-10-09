@@ -113,6 +113,8 @@ namespace motion {
         }
     }
     let waypoint = new Waypoint(0, 0)
+    
+    export function getWaypoint(){return waypoint}
 
     // PID controller for angle correction : setPoint = 0 (i.e. angle to the waypoint should be reduced to 0)
     const anglePID = new pid_ns.PID(1.5, 0.2, 0.1, 0, {
