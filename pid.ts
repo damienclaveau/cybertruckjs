@@ -1,11 +1,6 @@
 namespace pid_ns {
 
-    /**
-     * Utility function to clamp a value between limits
-     * @param value - Value to clamp
-     * @param limits - [lower, upper] limits array
-     * @returns Clamped value
-     */
+    // limits - [lower, upper] limits array
     function clamp(value: number | null, limits: (number | null)[]): number | null {
         const [lower, upper] = limits;
         if (value == null) return value;
@@ -105,20 +100,15 @@ namespace pid_ns {
          */
         public update(input: number, dt: number | null = null): number | null {
             if (!this.autoMode) return this._lastOutput;
-
             const now = control.millis();
-
             if (dt == null) dt = (this._lastTime != null) ? now - this._lastTime : 1;
-            if (dt <= 0) throw new RangeError(`invalid dt value ${dt}, must be positive`);
-
             // Check sample time constraint
             if (this.sampleTime != null && dt < this.sampleTime && this._lastOutput != null) {
                 return this._lastOutput;
             }
-
             dt = dt / 1000; // Convert to seconds
             const error = this.errorMap(this.setpoint - input);
-            const dInput = input - (this._lastInput ?? input);
+            const dInput = input - (this._lastInput != null ? this._lastInput : input);
 
             // Calculate proportional term
             if (this.proportionalOnMeasurement) {
@@ -129,7 +119,7 @@ namespace pid_ns {
 
             // Calculate integral term with windup protection
             this.integral += this.ki * error * dt;
-            this.integral = clamp(this.integral, this._outputLimits) ?? this.integral;
+            this.integral = clamp(this.integral, this._outputLimits) != null ? clamp(this.integral, this._outputLimits) : this.integral;
 
             // Calculate derivative term (derivative on measurement to avoid derivative kick)
             this.derivative = -this.kd * dInput / dt;
@@ -138,7 +128,7 @@ namespace pid_ns {
             const output = clamp(
                 this.proportional + this.integral + this.derivative,
                 this._outputLimits
-            ) ?? (this.proportional + this.integral + this.derivative);
+            ) != null ? clamp(this.proportional + this.integral + this.derivative, this._outputLimits) : (this.proportional + this.integral + this.derivative);
 
             // Update state
             this._lastTime = now;
@@ -163,12 +153,10 @@ namespace pid_ns {
         public set outputLimits(value: (number | null)[]) {
             if (value == null) value = [];
             const [lower, upper] = value;
-            if (lower != null && upper != null && lower >= upper) {
-                throw new RangeError('lower limit must be less than upper');
-            }
+            
             this._outputLimits = value;
-            this.integral = clamp(this.integral, value) ?? this.integral;
-            this._lastOutput = clamp(this._lastOutput, value) ?? this._lastOutput;
+            this.integral = clamp(this.integral, value) != null ? clamp(this.integral, value) : this.integral;
+            this._lastOutput = clamp(this._lastOutput, value) != null ? clamp(this._lastOutput, value) : this._lastOutput;
         }
 
         /**
@@ -179,7 +167,7 @@ namespace pid_ns {
         public setAutoMode(enabled: boolean, lastOutput: number | null = null): void {
             if (enabled && !this._autoMode) {
                 this.reset();
-                this.integral = clamp(lastOutput ?? 0, this._outputLimits) ?? 0;
+                this.integral = clamp(lastOutput != null ? lastOutput : 0, this._outputLimits) != null ? clamp(lastOutput != null ? lastOutput : 0, this._outputLimits) : 0;
             }
             this._autoMode = enabled;
         }
@@ -189,7 +177,7 @@ namespace pid_ns {
          */
         public reset(): void {
             this.proportional = 0;
-            this.integral = clamp(this.integral, this._outputLimits) ?? this.integral;
+            this.integral = clamp(this.integral, this._outputLimits) != null ? clamp(this.integral, this._outputLimits) : this.integral;
             this.derivative = 0;
             this._lastTime = control.millis();
             this._lastOutput = null;
@@ -230,9 +218,6 @@ namespace pid_ns {
             this.kd = kd;
         }
 
-        /**
-         * Get current PID gains
-         */
         public getGains(): { kp: number; ki: number; kd: number } {
             return {
                 kp: this.kp,
