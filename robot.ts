@@ -114,7 +114,13 @@ class Robot {
                 // TO DO update waypoint to the closest or the most centered ball
             }
         }
-
+        // Let's find the base zone
+        if (this.state == RobotState.searchingHome) {
+            if (vision.getQRCode(vision_ns.QRcodeId.Home) != null) {
+                logger.log("QRCode for Home found !");
+                this.setState(RobotState.goingHome);
+            }
+        }
 
         //  Condition 2 : ...
 
@@ -139,10 +145,18 @@ class Robot {
                 motion.setWaypoint(10, 45)
                 break
             case RobotState.searchingHome:
-                // pseudo code
-                //home_direction = position.getHomeDirection
-                //waypoint = compass.heading - home_direction
-                // or likely spinning around
+                /*
+                // waypoint = approximate direction of the base camp
+                if (arena.isPositionReliable()) {
+                    const distanceToBase = arena.getDistanceToBase();
+                    const bearingToBase = arena.getBearingToBase();
+                    logger.log(`Base: ${Math.round(distanceToBase)}cm at ${Math.round(bearingToBase)}°`);
+                    //motion.setWaypoint(distanceToBase, bearingToBase)
+                } else {
+                    logger.log("Position uncertain - looking for QR codes...");
+                    //motion.spinAround(10)
+                }
+                */
                 break
             case RobotState.trackingBall:
                 // waypoint == closest ball on Camera
@@ -153,7 +167,11 @@ class Robot {
                     logger.log("Tracking a Fantom ball !")
                 break
             case RobotState.goingHome:
+                // waypoint = QR code on Camera
                 let qr = vision.getQRCode(vision_ns.QRcodeId.Home)
+                if (qr != null) {
+                    motion.setWaypoint(qr.getDistanceInCm(), qr.getAngle())
+                }
                 break
             default:
                 break

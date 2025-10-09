@@ -50,7 +50,7 @@ let vision = new vision_ns.VisionProcessor(
     vision_ns.ObjectKind.Ball
 );
 vision.verbose = true
-//let arenaMap = new map_ns.ArenaMap();
+//let arena = new position.ArenaMap();
 
 
 function init() {
@@ -135,9 +135,9 @@ function onForever() {
     cyclesCount++;
     // TO DO : check if Huskylens capture frequency should be lower, like scheduled
     vision.refresh(); 
-    // TO DO : test incrementally all stages
-    position.updateSensors();
-    position.updateEnvironment();
+    // TO DO : test incrementally all stages    
+    // position.updateSensors();
+    //arena.updateRobotPosition(vision.tags, input.compassHeading());
     robot.updateObjective();
     robot.computeNextWaypoint();
     motion.goToWaypoint();
