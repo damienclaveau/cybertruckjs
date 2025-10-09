@@ -101,7 +101,9 @@ namespace motion {
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////
-    // Auto Navigation to Waypoint
+    // Auto Navigation to a Waypoint
+
+
     export class Waypoint {
         distance: number  //  mm
         angle: number // radians
@@ -110,31 +112,48 @@ namespace motion {
             this.angle = angle
         }
     }
-    let waypoint = new Waypoint(0,0)
-    export function setWaypoint(distance: number, angle: number){
+    let waypoint = new Waypoint(0, 0)
+
+    // PID controller for angle correction : setPoint = 0 (i.e. angle to the waypoint should be reduced to 0)
+    const anglePID = new pid_ns.PID(1.5, 0.2, 0.1, 0, {
+        outputLimits: [-45, 45],  // Servo steering limits
+        proportionalOnMeasurement: true,
+        errorMap: (error: number) => {
+            // Handle angle wrap-around (±180°)
+            while (error > 180) error -= 360;
+            while (error < -180) error += 360;
+            return error;
+        }
+    });
+    // PID controller for speed correction : setPoint = 0 (i.e. distance to the waypoint should be reduced to 0)
+    const speedPID = new pid_ns.PID(1.5, 0.2, 0.1, 0, {
+        outputLimits: [-100, 100],  // Motor speed limits
+        proportionalOnMeasurement: true
+    });
+
+    export function setWaypoint(distance: number, angle: number, reset: boolean = false){
         waypoint.distance = distance
         waypoint.angle = angle
+        if (reset) {
+            anglePID.reset();
+            speedPID.reset();
+        }
     }
     
     export function goToWaypoint() {
         if (MotionMode.Free)
             return
         //logger.log("Going to Waypoint d="+waypoint.distance+" , a="+waypoint.angle)
-        
-        //  Drive servo and motor with PWM according to updated linear and angular velocities
-        //  Set the steering servo position to aim to the waypoint
-        //  TO DO : to be computed with PID, cf Martin's code
-        let steering = 0
-        setWheelSteering(steering)
+        if (motionMode == MotionMode.Auto) {
+            //  Drive servo and motor with PWM according to updated linear and angular velocities
+            //  Set the steering servo position to aim to the waypoint
+            let steering = anglePID.update(waypoint.angle)
+            setWheelSteering(steering)
 
-        //  Set the servo throttle power depending on the remaining distance to the waypoint
-        // TODO : maybe a PID or exponential formula needed here
-        let speed = 0
-        if (waypoint.distance > 60)
-            speed = 100
-        else if (waypoint.distance > 0)
-            speed = 50
-        setThrottle(speed)
+            //  Set the servo throttle power depending on the remaining distance to the waypoint
+            let speed = speedPID.update(waypoint.distance)
+            setThrottle(speed)
+        }
     }
 
 }

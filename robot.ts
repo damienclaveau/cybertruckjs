@@ -150,8 +150,20 @@ class Robot {
                 if (arena.isPositionReliable()) {
                     const distanceToBase = arena.getDistanceToBase();
                     const bearingToBase = arena.getBearingToBase();
-                    logger.log(`Base: ${Math.round(distanceToBase)}cm at ${Math.round(bearingToBase)}°`);
-                    //motion.setWaypoint(distanceToBase, bearingToBase)
+                    const robotPose = arenaMap.getRobotPose();
+                    // Imperative mode
+                    // Calculate turn angle needed
+                    let turnAngle = bearingToBase - robotPose.heading;
+                    if (Math.abs(turnAngle) > 10)
+                        // Normalize angle to -180 to 180
+                        while (turnAngle > 180) turnAngle -= 360;
+                        while (turnAngle < -180) turnAngle += 360;
+                        motion.spinAround(turnAngle);
+                        //motion.setWaypoint(distanceToBase, turnAngle)
+                        logger.log(`Base: ${Math.round(distanceToBase)}cm at ${Math.round(bearingToBase)}°`);
+                        // Auto controlled mode
+                        //motion.setWaypoint(distanceToBase, bearingToBase)
+                    }
                 } else {
                     logger.log("Position uncertain - looking for QR codes...");
                     //motion.spinAround(10)

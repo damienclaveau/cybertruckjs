@@ -19,7 +19,8 @@
         "motion.ts",
         "vision.ts",
         "game.ts",
-        "robot.ts"
+        "robot.ts",
+        "pid.ts"
     ],
     "testFiles": [
         "test.ts"

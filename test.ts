@@ -50,4 +50,46 @@ namespace test_cybertruckjs {
         
         return true
     }
+    
+
+    /**
+     * Example usage and test function
+     */
+    function testAdvancedPID(): void {
+        logger.log("=== PID Controller Test ===");
+        // Create PID with output limits
+        const pid = new pid_ns.PID(1.0, 0.1, 0.05, 100, {
+            outputLimits: [-50, 50],
+            sampleTime: 10,
+            proportionalOnMeasurement: false
+        });
+
+        // Simulate a simple system
+        let processVariable = 0;
+        const systemGain = 0.8;
+        const systemDelay = 0.9;
+
+        logger.log("Starting PID control simulation...");
+        for (let i = 0; i < 100; i++) {
+            // Get PID output
+            const controlOutput = pid.update(processVariable);
+            // Simulate system response
+            if (controlOutput != null) {
+                processVariable = processVariable * systemDelay + controlOutput * systemGain * 0.01;
+            }
+            // Log every 10 iterations
+            if (i % 10 === 0) {
+                const state = pid.getState();
+                logger.log(`Step ${i}: PV=${processVariable}, Output=${controlOutput}, Error=${state.error}`);
+            }
+            // Break if converged
+            if (Math.abs(pid.setpoint - processVariable) < 0.5) {
+                logger.log(`Converged at step ${i}`);
+                break;
+            }
+        }
+        const finalState = pid.getState();
+        logger.log(`Final state: PV=${processVariable}, Error=${finalState.error}`);
+        logger.log("=== Test Complete ===");
+    }
 }
