@@ -67,6 +67,17 @@ function init() {
     ServoController.centerAllServos()
     ServoController.testAllServos([FOR_LATER_USE_SERVO, DIRECTION_SERVO])
     MotorController.testAllMotors([GRABBER_MOTOR, SPEED_MOTOR])
+    // check the Motion API
+    motion.setWheelSteering(0)
+    pause(1000)
+    motion.setWheelSteering(-45)
+    pause(1000)
+    motion.setWheelSteering(0)
+    pause(1000)
+    motion.setWheelSteering(45)
+    pause(1000)
+    motion.setWheelSteering(0)
+
     logger.log("Expansion board health check completed");
     // Initialize physical sensors
     if (EXEC_MODE != ExecMode.MakeCode) {

@@ -21,7 +21,7 @@ namespace motion {
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Motor Control
-    function setThrottle(speed: number) {
+    export function setThrottle(speed: number) {
         if (EXEC_MODE == ExecMode.MakeCode) {// for simulation mode only
             servos.P1.run(speed)
         } else {
@@ -29,7 +29,7 @@ namespace motion {
         }
     }
 
-    function setWheelSteering(steering: number) {
+    export function setWheelSteering(steering: number) {
         if (EXEC_MODE == ExecMode.MakeCode) {// for simulation mode only
             servos.P0.setAngle(steering)
         } else {

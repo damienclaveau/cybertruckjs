@@ -142,7 +142,7 @@ class Robot {
                 break
             case RobotState.searchingBalls:
                 // we are likely spinning around
-                motion.setWaypoint(10, 45)
+                motion.spinAround(-45)
                 break
             case RobotState.searchingHome:
                 /*
