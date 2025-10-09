@@ -141,14 +141,14 @@ class Robot {
                 break
             case RobotState.trackingBall:
                 // waypoint == closest ball on Camera
-                let b  = vision_ns.getClosestBall();
+                let b  = vision.getClosestBall();
                 if (b!=null)
-                    motion.setWaypoint(b.getDistance(), b.getAngle())
+                    motion.setWaypoint(b.getDistanceInCm(), b.getAngle())
                 else 
                     logger.log("Tracking a Fantom ball !")
                 break
             case RobotState.goingHome:
-                let qr = vision_ns.getQRCode(vision_ns.QRcodeId.Home)
+                let qr = vision.getQRCode(vision_ns.QRcodeId.Home)
                 break
             default:
                 break

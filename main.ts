@@ -50,6 +50,7 @@ let vision = new vision_ns.VisionProcessor(
     vision_ns.ObjectKind.Ball
 );
 vision.verbose = true
+//let arenaMap = new map_ns.ArenaMap();
 
 
 function init() {
@@ -89,6 +90,7 @@ function init() {
     }
     initialized = true;
     logger.log("Initialization completed");
+    test_cybertruckjs.testGetDistance()
 }
 
 init();
@@ -134,11 +136,11 @@ function onForever() {
     // TO DO : check if Huskylens capture frequency should be lower, like scheduled
     vision.refresh(); 
     // TO DO : test incrementally all stages
-    //position.updateSensors();
-    //position.updateEnvironment();
+    position.updateSensors();
+    position.updateEnvironment();
     robot.updateObjective();
-    //robot.computeNextWaypoint();
-    //motion.goToWaypoint();
+    robot.computeNextWaypoint();
+    motion.goToWaypoint();
 }
 
 // best effort loop

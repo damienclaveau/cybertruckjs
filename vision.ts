@@ -1,15 +1,21 @@
 namespace vision_ns {
 
-    const HUSKY_SCREEN_WIDTH = 320; // pixels
-    const HUSKY_SCREEN_HEIGHT = 240; // pixels
-    const HUSKY_SCREEN_CENTER_X = HUSKY_SCREEN_WIDTH / 2;
-    const HUSKY_SCREEN_CENTER_Y = HUSKY_SCREEN_HEIGHT / 2;
-    const HUSKY_SCREEN_TOLERANCE_X = 10; // pixels
+    export const HUSKY_SCREEN_WIDTH = 320; // pixels
+    export const HUSKY_SCREEN_HEIGHT = 240; // pixels
+    export const HUSKY_SCREEN_CENTER_X = HUSKY_SCREEN_WIDTH / 2;
+    export const HUSKY_SCREEN_CENTER_Y = HUSKY_SCREEN_HEIGHT / 2;
+    export const HUSKY_SCREEN_TOLERANCE_X = 10; // pixels
+    // Horizontal frontier representing the frontier between FrontSide and Inside the Bot
+    // This is compensating the down angle of the camera
+    export const HUSKY_SCREEN_ORIGIN_X = HUSKY_SCREEN_CENTER_X;
+    export const HUSKY_SCREEN_ORIGIN_Y = HUSKY_SCREEN_HEIGHT * 0.8;
 
-    const BALL_REFERENCE_DISTANCE = 50; // (cm)
-    const BALL_REFERENCE_FRAMESIZE = 30; // (pixels) width and height of a ball frame at 50 cm distance
-    const BALL_DISTANCE_RATIO = BALL_REFERENCE_DISTANCE / BALL_REFERENCE_FRAMESIZE;
-
+    export const BALL_REFERENCE_DISTANCE = 50; // (cm)
+    export const BALL_REFERENCE_FRAMESIZE = 30; // (pixels) width and height of a ball frame at 50 cm distance
+    export const BALL_DISTANCE_RATIO = BALL_REFERENCE_DISTANCE / BALL_REFERENCE_FRAMESIZE;
+    export const TAG_REFERENCE_DISTANCE = 50; // (cm)
+    export const TAG_REFERENCE_FRAMESIZE = 30; // (pixels) width and height of a ball frame at 50 cm distance
+    export const TAG_DISTANCE_RATIO = TAG_REFERENCE_DISTANCE / TAG_REFERENCE_FRAMESIZE;
     // Screen Side Class
     export enum ScreenSide {
         Left,
@@ -57,7 +63,6 @@ namespace vision_ns {
         QRcode
     }
 
-
     // Visual Object Class
     export class VisualObject {
         public x: number = -1
@@ -88,7 +93,7 @@ namespace vision_ns {
 
         toString() {
             // Display the object's details.
-            return `kind: ${this.kind} id: ${this.x} x:${this.x} y:${this.y} w:(${this.w} h:${this.h}`;
+            return `kind: ${this.kind} id: ${this.x} x:${this.x} y:${this.y} w:${this.w} h:${this.h}`;
         }
 
         // Get side of the TrackedObject relative to the robot direction
@@ -101,32 +106,78 @@ namespace vision_ns {
                 return ScreenSide.Middle;
             }
         }
-        // Compute distance of the TrackedObject based on the visual size ratio
-        getDistance() {
+
+        // Compute distance of an object based on visual size ratio
+        // good for large objects like QR Codes ?
+        getDistanceBySize() {
             const size = Math.sqrt(this.w ** 2 + this.h ** 2); // frame diagonal
-            return (BALL_REFERENCE_FRAMESIZE * BALL_REFERENCE_DISTANCE) / size;
+            switch (this.kind) {
+                case ObjectKind.Ball: return (BALL_REFERENCE_FRAMESIZE * BALL_REFERENCE_DISTANCE) / size;
+                case ObjectKind.QRcode: return (TAG_REFERENCE_FRAMESIZE * TAG_REFERENCE_DISTANCE) / size;
+                default: return Infinity;
+            }
+        }
+
+        // Calculate distance (radius) from origin (at middle bottom of screen, think Radar quadrant)
+        // good for ponctual objects like Balls ?
+        // Origin: x = HUSKY_SCREEN_CENTER_X, y = HUSKY_SCREEN_HEIGHT
+        getDistanceInPixels() {
+            let deltaX = Math.abs(this.x - HUSKY_SCREEN_ORIGIN_X);
+            let deltaY = this.y - HUSKY_SCREEN_ORIGIN_Y;
+            // in this particular mode deltaY < 0 means inside or behind the robot frontside
+            // and we don't plan to catch balls backward for the moment
+            if (deltaY > 0)
+                deltaY = Infinity;
+            else
+                deltaY = Math.abs(deltaY);
+            return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        }
+
+        // Convert visual distance to real distance
+        getDistanceInCm() {
+            const deltaX = this.x - HUSKY_SCREEN_ORIGIN_X;
+            const deltaY = this.y - HUSKY_SCREEN_ORIGIN_Y;
+            return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        }
+
+        // Compute distance of a Ball based on Y position on screen
+        // Y=0 (top) = 100cm, Y=HUSKY_SCREEN_HEIGHT (bottom) = 20cm
+        getDistanceByHeight() {
+            // Linear interpolation: distance decreases as Y increases
+            // At y=0 (top): distance = 100cm
+            // At y=HUSKY_SCREEN_HEIGHT (bottom): distance = 20cm
+            const maxDistance = 100; // cm at top of screen
+            const zeroDistance = 0; // cm at HUSKY_SCREEN_ORIGIN_Y
+            const minDistance = -20;  // cm at bottom of screen
+
+            // Normalize Y position to 0-1 range
+            const normalizedY = this.y / HUSKY_SCREEN_HEIGHT;
+
+            // Linear interpolation between max and min distance
+            const distance = maxDistance - (normalizedY * (maxDistance - minDistance));
+
+            return Math.max(minDistance, Math.min(maxDistance, distance));
         }
 
         // Compute coordinates of the TrackedObject relative to the robot position (origin)
         getAngle() {
-            const distance = this.getDistance();
+            const distance = this.getDistanceByHeight();
             const deltaX = Math.abs(this.x - HUSKY_SCREEN_CENTER_X);
             const deltaY = Math.sqrt(distance ** 2 - deltaX ** 2);
             // Angle between y front-axis and the ball projected coordinates(dx,dy)
             return Math.atan2(deltaX, deltaY);
         }
-    }
-    ////////////////////////////////////////////////////////
-    // !!!!!!!!!!!! The getDistance function is wrong
-    // we should evaluate the distance based on the Y axis
-    // (bottom of screen = close, top of screen = far)
-    ///////////////////////////////////////////////////////
-    export function getClosestBall(): VisualObject{
-        return null
-    }
 
-    export function getQRCode(code: QRcodeId): VisualObject {
-        return null
+        // Get angle in degrees with proper left/right sign convention
+        // Returns: [-180..0] for left side, [0..180] for right side
+        getAngleDegrees() {
+            const deltaX = this.x - HUSKY_SCREEN_CENTER_X;  // Preserve sign for left/right
+            const distance = this.getDistanceByHeight();
+            const deltaY = Math.sqrt(distance ** 2 - (deltaX * deltaX));
+            // Use signed deltaX to get proper left/right direction
+            const angleRadians = Math.atan2(deltaX, deltaY);
+            return angleRadians * 180 / Math.PI;
+        }
     }
 
 
@@ -228,7 +279,7 @@ namespace vision_ns {
             this.bots = [];
             // for each frame, Update the relative Position of the QR codes
             const nbFrames = huskylens.getBox(HUSKYLENSResultType_t.HUSKYLENSResultBlock);
-            if (this.verbose || (nbFrames > 0)) { logger.log(`Objects : ${nbFrames}`); }
+            if (this.verbose) { if (nbFrames > 0) logger.log(`Objects : ${nbFrames}`); }
             for (let i = 1; i <= nbFrames; i++) {
                 const vo = new VisualObject();
                 vo.id = huskylens.readBox_ss(i, Content3.ID);
@@ -255,7 +306,7 @@ namespace vision_ns {
                         this.bots.push(vo);
                         if (this.verbose) { logger.log("Bot : " + vo.toString()); }
                     }
-                    
+
                 }
                 if (this.mode === protocolAlgorithm.OBJECTCLASSIFICATION) {
                     if (vo.id === ObjectClassID.Ball) {
@@ -273,9 +324,37 @@ namespace vision_ns {
                         this.tags.push(vo);
                         if (this.verbose) { logger.log("Tag : " + vo.toString()); }
                     }
-                    
+
                 }
             }
+        }
+
+        // Get the Tag by Id
+        getQRCode(id: QRcodeId): VisualObject {
+            if (this.tags.length === 0) return null;
+            for (const tag of this.tags) {
+                if (tag.id == id) return tag;
+            }
+            return null;
+        }
+
+        // Get the closest ball that is most in line of sight and nearest
+        getClosestBall(): VisualObject | null {
+            if (this.balls.length === 0) {
+                return null;
+            }
+            let bestBall: VisualObject | null = null;
+            let bestDistance = Infinity;
+            for (const ball of this.balls) {
+                // Calculate distance (radius) from origin at middle bottom of screen
+                // TODO :  Weighted distance vs angle, could be a good idea to Prefer in-axis balls
+                const distance = ball.getDistanceInPixels()
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestBall = ball;
+                }
+            }
+            return bestBall;
         }
     }
 
