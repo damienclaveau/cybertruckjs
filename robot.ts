@@ -39,6 +39,9 @@ class Robot {
                         vision.setKind(vision_ns.ObjectKind.QRcode)
                     }
                     break
+                case RobotState.atHome:
+                    UTBBot.newBotStatus(UTBBotCode.BotStatus.MISSION_COMPLETED)
+                    break
                 default:
                     break
             }
@@ -82,9 +85,11 @@ class Robot {
         if ((bricksGame.remainingTime() < DELAY_TO_GO_HOME)
             &&((this.state == RobotState.searchingBalls)
             || (this.state == RobotState.trackingBall))) {
+                
             logger.log("########### GO HOME ###################")
             this.doGoHome()
         }
+        
         // While waiting for the game to start
         // we could also spin left/right and look at the balls and QR Codes
         if (this.state == RobotState.searchingBalls) {

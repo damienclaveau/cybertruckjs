@@ -32,7 +32,7 @@ class BricksGame {
     public doObey() {
         // Acknowledge the command
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.IOBEY)
-        UTBBot.newBotStatus(UTBBotCode.BotStatus.Idle)
+        UTBBot.newBotStatus(UTBBotCode.BotStatus.WAITING)
         this.mode = GameMode.Slave
         basic.showIcon(IconNames.Angry)
         //music.setTempo(360)
@@ -46,7 +46,7 @@ class BricksGame {
             robot.doStart()
             // Acknowledge the command
             UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.START)
-            UTBBot.newBotStatus(UTBBotCode.BotStatus.Search)
+            UTBBot.newBotStatus(UTBBotCode.BotStatus.MOVING)
             logger.warning(">Start<")
             music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground)
             basic.showLeds(`
@@ -66,7 +66,7 @@ class BricksGame {
         robot.doStop()
         // Acknowledge the command
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.STOP)
-        UTBBot.newBotStatus(UTBBotCode.BotStatus.Idle)
+        UTBBot.newBotStatus(UTBBotCode.BotStatus.STOPPED)
         logger.warning(">Stop<")
         music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
         basic.showLeds(`
@@ -81,7 +81,7 @@ class BricksGame {
         robot.askGoingHome()
         // Acknowledge the command
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.DANGER)
-        UTBBot.newBotStatus(UTBBotCode.BotStatus.ToShelter)
+        UTBBot.newBotStatus(UTBBotCode.BotStatus.TO_SAFETY)
         logger.warning(">Danger<")
         music._playDefaultBackground(music.builtInPlayableMelody(Melodies.BaDing), music.PlaybackMode.InBackground)
         basic.showIcon(IconNames.Skull)
@@ -126,9 +126,9 @@ function initGameControl() {
 
     let receivedString = ""
     UTBBot.initAsBot(UTBBotCode.TeamName.TeslaCybertruck)
-    UTBBot.newBotStatus(UTBBotCode.BotStatus.Idle)
+    UTBBot.newBotStatus(UTBBotCode.BotStatus.WAITING)
     UTBRadio.showRadioGroup()
-    loops.everyInterval(15000, function () {
+    loops.everyInterval(10000, function () {
         logger.log("<hearbeat>")
         UTBBot.emitHeartBeat()
     })
