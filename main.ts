@@ -90,7 +90,7 @@ function init() {
     }
     initialized = true;
     logger.log("Initialization completed");
-    test_cybertruckjs.testGetDistance()
+    //test_cybertruckjs.testGetDistance()
 }
 
 init();
