@@ -20,8 +20,10 @@ namespace position {
     // approximate the Robot orientation and position
     
     // Arena Configuration
-    const ARENA_WIDTH = 200; // cm
-    const ARENA_HEIGHT = 200; // cm
+    const ARENA_WIDTH = 130; // cm (260 for the 4 players game)
+    const ARENA_HEIGHT = 130; //  
+    const BASE_CAMP_X = ARENA_WIDTH; // this is North-East Corner
+    const BASE_CAMP_Y = ARENA_HEIGHT; // this is North-East Corner
     // QR Code Positions in Arena (in cm from origin at center)
     interface QRPosition {
         x: number;
@@ -81,7 +83,7 @@ namespace position {
                 { x: halfWidth, y: -halfHeight, cardinal: "SE", id: vision_ns.QRcodeId.South }, // Southeast corner
             ];
             // Base camp position (can be configured)
-            this.basePosition = { x: 0, y: 0, cardinal: "Base", id: vision_ns.QRcodeId.Home };
+            this.basePosition = { x: BASE_CAMP_X, y: BASE_CAMP_Y, cardinal: "Base", id: vision_ns.QRcodeId.Home };
         }
         private markArenaBoundaries() {
             // Mark the arena walls as occupied in the occupancy grid
@@ -253,5 +255,22 @@ namespace position {
             const timeSinceUpdate = input.runningTime() - this.lastUpdate;
             return timeSinceUpdate < 5000 && this.robotPose.confidence > 30; // 5 seconds, 30% confidence
         }
+        // Diagnostic function to display map information
+        public displayMapInfo() {
+            const robotPose = this.getRobotPose();
+            const qrPositions = this.getAllQRPositions();
+            serial.writeLine("=== Detailed Arena Map Status ===");
+            serial.writeLine(`Robot: (${Math.round(robotPose.x)}, ${Math.round(robotPose.y)}) heading ${Math.round(robotPose.heading)}°`);
+            serial.writeLine(`Confidence: ${robotPose.confidence}%`);
+            serial.writeLine(`Position reliable: ${this.isPositionReliable()}`);
+            serial.writeLine(`Distance to base: ${Math.round(this.getDistanceToBase())}cm`);
+            serial.writeLine(`Bearing to base: ${Math.round(this.getBearingToBase())}°`);
+            // List QR code positions
+            serial.writeLine("QR Code positions:");
+            for (const qr of qrPositions) {
+                serial.writeLine(`  ${qr.cardinal} (ID ${qr.id}): (${qr.x}, ${qr.y})`);
+            }
+        }
     }
+    
 }
