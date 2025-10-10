@@ -67,14 +67,18 @@ namespace motion {
             if (angle > 0) {
                 setWheelSteering(-45)  // Turn right for positive angle
             } else if (angle < 0) {
-                setWheelSteering( 45) // Turn left for negative angle
-            } else {}// No rotation needed
+                setWheelSteering(45) // Turn left for negative angle
+            } else { }// No rotation needed
             setThrottle(spinSpeed)
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // Wait until we reach the target heading (with tolerance)
-            pauseUntil(() => {
-                let currentCompass = input.compassHeading()
-                return isHeadingReached(currentCompass, targetHeading, 5) // 5 degree tolerance
-            })
+            // never do this in MakeCode mode : it ends up in an infinite loop
+            if (EXEC_MODE != ExecMode.MakeCode)
+                pauseUntil(() => {
+                    let currentCompass = input.compassHeading()
+                    return isHeadingReached(currentCompass, targetHeading, 15) // 15 degree tolerance
+                })
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             setThrottle(0)
             setWheelSteering(0)
         } catch (error) {
@@ -97,6 +101,7 @@ namespace motion {
         if (diff > 180) {
             diff = 360 - diff
         }
+        logger.log("Angle Diff"+diff)
         return diff <= tolerance
     }
 
