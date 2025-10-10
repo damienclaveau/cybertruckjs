@@ -28,9 +28,11 @@ namespace motion {
         } else {
             MotorController.setMotor(SPEED_MOTOR, speed)
         }
-        // Each time we ask for motion, start the motion detector
-        if      (Math.abs(speed) < MIN_THROTTLE_FOR_MOTION)  motionDetector.stop();
-        else if (Math.abs(speed) > MIN_THROTTLE_FOR_MOTION)  motionDetector.start(speed);
+        // Each time we ask for (or update) a positive speed, start the motion detector
+        if (ENABLE_OBSTACLE_DETECTION) {
+            if      (Math.abs(speed) < MIN_THROTTLE_FOR_MOTION) motionDetector.stop();
+            else if (Math.abs(speed) > MIN_THROTTLE_FOR_MOTION) motionDetector.start(speed);
+        }
     }
 
     export function setWheelSteering(steering: number) {
