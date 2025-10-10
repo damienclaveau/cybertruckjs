@@ -58,7 +58,8 @@ namespace position {
             this.initializeQRPositions();
             // Initialize occupancy grid
             this.gridWidth = Math.ceil(ARENA_WIDTH / this.gridResolution);
-            this.gridHeight = Math.ceil(ARENA_HEIGHT / this.gridResolution);
+            this.gridHeight = Math.ceil(ARENA_HEIGHT / this.gridResolution); 
+            this.occupancyGrid = [];
             for (let i = 0; i < this.gridHeight; i++) {
                 this.occupancyGrid[i] = []; // Initialize each row
                 for (let j = 0; j < this.gridWidth; j++) {
