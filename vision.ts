@@ -263,7 +263,7 @@ namespace vision_ns {
                     huskylens.readeBox(objectId, Content1.width),
                     huskylens.readeBox(objectId, Content1.height)
                 );
-                if (this.verbose) { logger.log("Tracked Object updated : " + this.tracked.toString()) }
+                if (this.verbose) { logger.log(`Tracked Object updated : ${this.tracked.toString()}`) }
 
             } else {
                 // if (input.runningTime() - trackedObject.lastSeen) > OBJECT_LOST_DELAY:
@@ -293,18 +293,18 @@ namespace vision_ns {
                 if (this.mode === protocolAlgorithm.ALGORITHM_TAG_RECOGNITION) {
                     vo.kind = ObjectKind.QRcode
                     this.tags.push(vo);
-                    if (this.verbose) { logger.log("Tag : " + vo.toString()); }
+                    if (this.verbose) { logger.log(`Tag : ${vo.toString()}`); }
                 }
                 if (this.mode === protocolAlgorithm.ALGORITHM_COLOR_RECOGNITION) {
                     if (vo.id === ObjectColorID.Red) {
                         vo.kind = ObjectKind.Ball
                         this.balls.push(vo);
-                        if (this.verbose) { logger.log("Ball : " + vo.toString()); }
+                        if (this.verbose) { logger.log(`Ball : ${vo.toString()}`); }
                     }
                     if (vo.id === ObjectColorID.Yellow) {
                         vo.kind = ObjectKind.Robot
                         this.bots.push(vo);
-                        if (this.verbose) { logger.log("Bot : " + vo.toString()); }
+                        if (this.verbose) { logger.log(`Bot : ${vo.toString()}`); }
                     }
 
                 }
@@ -312,17 +312,17 @@ namespace vision_ns {
                     if (vo.id === ObjectClassID.Ball) {
                         vo.kind = ObjectKind.Ball
                         this.balls.push(vo);
-                        if (this.verbose) { logger.log("Ball : " + vo.toString()); }
+                        if (this.verbose) { logger.log(`Ball : ${vo.toString()}`); }
                     }
                     if (vo.id === ObjectClassID.Robot) {
                         vo.kind = ObjectKind.Robot
                         this.bots.push(vo);
-                        if (this.verbose) { logger.log("Bot : " + vo.toString()); }
+                        if (this.verbose) { logger.log(`Bot : ${vo.toString()}`); }
                     }
                     if (vo.id === ObjectClassID.Tag) {
                         vo.kind = ObjectKind.QRcode
                         this.tags.push(vo);
-                        if (this.verbose) { logger.log("Tag : " + vo.toString()); }
+                        if (this.verbose) { logger.log(`Tag : ${vo.toString()}`); }
                     }
 
                 }

@@ -23,10 +23,17 @@ class BricksGame {
         }
         else return GAME_DURATION;// any positive number would be okay
     }
+    // Update method to handle game timeout logic
+    public update(): void {
+        // Check if game should stop due to timeout
+        if ((this.status == GameState.Started) && (this.remainingTime() < 0)) {
+            this.doStop();
+        }
+    }
     public setState(state: GameState) {
         if (this.status != state) {
             this.status = state
-            logger.log("Robot State changed : " + ("" + this.status))
+            logger.log(`Robot State changed : ${this.status}`)
         }
     }
     public doObey() {
@@ -138,18 +145,3 @@ function initGameControl() {
     })
 }
 
-
-/*
-source : https://github.com/Taccart/amaker-unleash-the-brick-example/blob/master/main.ts
-source : https://github.com/Taccart/amaker-unleash-the-bricks-2025-lib-usage-demo/blob/master/main.ts
-UnleashTheBricks.setLogLevel(LogLevel.Debug)
-UnleashTheBricks.setEchoToConsole(true)
-UnleashTheBricks.initCommunicationChannel(CommunicationChannel.Radio)
-UnleashTheBricks.setBotStatus(BotStatus.Searching)
-UnleashTheBricks.setBotStatus(BotStatus.Capturing)
-UnleashTheBricks.setBotStatus(BotStatus.BringingBack)
-basic.forever(function () {
-    UnleashTheBricks.emitHeartBeat()
-    control.waitMicros(10000000)
-})
-*/

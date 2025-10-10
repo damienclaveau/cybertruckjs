@@ -3,18 +3,6 @@
 
 namespace position {
     
-    export function updateSensors() {
-        //  Update Compass direction, current speed, deviation, commands coming from Bluetooth, ...
-        //  TO DO Compute current position with sensor fusion https://github.com/micropython-IMU/micropython-fusion/tree/master
-        let compass_heading = input.compassHeading()
-        let mag_x = input.magneticForce(Dimension.X)
-        let mag_y = input.magneticForce(Dimension.Y)
-        let mag_z = input.magneticForce(Dimension.Z)
-        let acc_x = input.acceleration(Dimension.X)
-        let acc_y = input.acceleration(Dimension.Y)
-        let acc_z = input.acceleration(Dimension.Z)
-        let acceleration = Math.sqrt(acc_x ** 2 + acc_y ** 2 + acc_z ** 2)
-    }
 
     // re-compute the occupancy grid : QRCodes cardinals, home location, balls clusters, robots
     // approximate the Robot orientation and position
@@ -50,7 +38,7 @@ namespace position {
         private robotPose: RobotPose = new RobotPose();
         private lastUpdate: number = 0;
         private occupancyGrid: number[][]; // 0 = free, 1 = occupied, -1 = unknown
-        private gridResolution: number = 5; // cm per cell
+        private gridResolution: number = 10; // cm per cell
         private gridWidth: number;
         private gridHeight: number;
         constructor() {
@@ -59,6 +47,7 @@ namespace position {
             // Initialize occupancy grid
             this.gridWidth = Math.ceil(ARENA_WIDTH / this.gridResolution);
             this.gridHeight = Math.ceil(ARENA_HEIGHT / this.gridResolution);
+            this.occupancyGrid = []; // Initialize the main array first
             for (let i = 0; i < this.gridHeight; i++) {
                 this.occupancyGrid[i] = []; // Initialize each row
                 for (let j = 0; j < this.gridWidth; j++) {

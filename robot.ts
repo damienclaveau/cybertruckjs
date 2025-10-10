@@ -11,7 +11,6 @@ enum RobotState {
 
 class Robot {
     state: number
-    //waypoint: motion.Waypoint
     constructor() {
         this.state = RobotState.waiting
     }
@@ -19,7 +18,7 @@ class Robot {
     public setState(state: number) {
         if (this.state != state) {
             this.state = state
-            logger.log("Robot State changed : " + this.state)
+            logger.log(`Robot State changed : ${this.state}`)
             switch (this.state) {
                 case RobotState.atHome:
                 case RobotState.stopped:
@@ -50,7 +49,7 @@ class Robot {
 
     // Externel explicit state changes
     public doStart() {
-        logger.log("Game started at " + bricksGame.startTime + " . Starting collecting balls...")
+        logger.log(`Game started at ${bricksGame.startTime} . Starting collecting balls...`)
         MotorController.setMotor(GRABBER_MOTOR, 50) //grab
         if (EXEC_MODE == ExecMode.MakeCode)
             servos.P2.run(100) // for visual simulation
@@ -74,6 +73,12 @@ class Robot {
         
     }
 
+    // try to get out of a blocked state
+    public handleBlockedState(): void {
+        motion.moveStraight(-40) // backward
+        motion.spinAround(90)
+    }
+    
     // Autonomous decision making
     public updateObjective() {
         //  Based on input signals, current position, object recgnition and game instructions
@@ -81,7 +86,7 @@ class Robot {
         // 
         //  Condition 1 : get closer to the home before the end of the game
         //  (TO DO : consider distance_to_home)
-        //logger.log("Remaining time " + bricksGame.remainingTime())
+        //logger.log(`Remaining time ${bricksGame.remainingTime()}`)
         if ((bricksGame.remainingTime() < DELAY_TO_GO_HOME)
             &&((this.state == RobotState.searchingBalls)
             || (this.state == RobotState.trackingBall))) {
@@ -94,7 +99,7 @@ class Robot {
         // we could also spin left/right and look at the balls and QR Codes
         if (this.state == RobotState.searchingBalls) {
             if (vision.balls.length > 0) {
-                logger.log("Found Balls on screen : " + vision.balls.length)
+                logger.log(`Found Balls on screen : ${vision.balls.length}`)
                 this.setState(RobotState.trackingBall)
                 // TO DO define waypoint to the closest or the most centered ball
             }
@@ -106,11 +111,11 @@ class Robot {
         if (this.state == RobotState.trackingBall) {
             if (vision.balls.length == 0) {
                 UTBBot.incrementCollectedBallsCount(1);
-                logger.log("Previous ball LOST or COLLECTED. Back to searching...(on screen Balls: " + vision.balls.length + ")")
+                logger.log(`Previous ball LOST or COLLECTED. Back to searching...(on screen Balls: ${vision.balls.length})`)
                 this.setState(RobotState.searchingBalls)
             }
             else {
-                logger.log("Tracking the closest ball... (on screen Balls: " + vision.balls.length + ")")
+                logger.log(`Tracking the closest ball... (on screen Balls: ${vision.balls.length})`)
                 // TO DO update waypoint to the closest or the most centered ball
             }
         }

@@ -18,6 +18,7 @@ namespace motion {
     const cruiseLinearSpeed = 30 // cm/s
     const spinSpeed = 50
     const spinAngularSpeed = 20 // degree/s
+    const MIN_THROTTLE_FOR_MOTION = 10; // Minimum throttle to expect motion
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Motor Control
@@ -27,6 +28,9 @@ namespace motion {
         } else {
             MotorController.setMotor(SPEED_MOTOR, speed)
         }
+        // Each time we ask for motion, start the motion detector
+        if      (Math.abs(speed) < MIN_THROTTLE_FOR_MOTION)  motionDetector.stop();
+        else if (Math.abs(speed) > MIN_THROTTLE_FOR_MOTION)  motionDetector.start(speed);
     }
 
     export function setWheelSteering(steering: number) {
@@ -39,14 +43,14 @@ namespace motion {
 
     //////////////////////////////////////////////////////////////////
     // Naive straight movement
-    export function moveStraight(distance: number){
+    export function moveStraight(distance: number) {
         try {
             motionMode = MotionMode.Free
             setWheelSteering(0)
             if (distance > 0)
                 setThrottle(cruiseSpeed)
             else
-                setThrottle(cruiseSpeed*-1)
+                setThrottle(cruiseSpeed * -1)
             // distance in cm, cruiseLinearSpeed in cm/s, result in milliseconds
             pause((distance / cruiseLinearSpeed) * 1000)
         } catch (error) {
@@ -101,7 +105,7 @@ namespace motion {
         if (diff > 180) {
             diff = 360 - diff
         }
-        logger.log("Angle Diff"+diff)
+        logger.log(`Angle Diff${diff}`)
         return diff <= tolerance
     }
 
@@ -117,9 +121,18 @@ namespace motion {
             this.angle = angle
         }
     }
-    let waypoint = new Waypoint(0, 0)
-    
-    export function getWaypoint(){return waypoint}
+    export const waypoint = new Waypoint(0, 0)
+    export function getWaypoint() { return waypoint }
+    // Mutate the Waypoint object to save memory
+    export function setWaypoint(distance: number, angle: number, reset: boolean = false) {
+        waypoint.distance = distance
+        waypoint.angle = angle
+        // Reset PIDs if the waypoint is radically different from the previous one
+        if (reset) {
+            anglePID.reset();
+            speedPID.reset();
+        }
+    }
 
     // PID controller for angle correction : setPoint = 0 (i.e. angle to the waypoint should be reduced to 0)
     const anglePID = new pid_ns.PID(1.5, 0.2, 0.1, 0, {
@@ -138,19 +151,11 @@ namespace motion {
         proportionalOnMeasurement: true
     });
 
-    export function setWaypoint(distance: number, angle: number, reset: boolean = false){
-        waypoint.distance = distance
-        waypoint.angle = angle
-        if (reset) {
-            anglePID.reset();
-            speedPID.reset();
-        }
-    }
-    
+
     export function goToWaypoint() {
         if (MotionMode.Free)
             return
-        //logger.log("Going to Waypoint d="+waypoint.distance+" , a="+waypoint.angle)
+        //logger.log(`Going to Waypoint d=${waypoint.distance} , a=${waypoint.angle}`)
         if (motionMode == MotionMode.Auto) {
             //  Drive servo and motor with PWM according to updated linear and angular velocities
             //  Set the steering servo position to aim to the waypoint
@@ -163,4 +168,172 @@ namespace motion {
         }
     }
 
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Motion detection for blocked robot detection
+    interface AccelerationSample {
+        timestamp: number;
+        acceleration: number;
+    }
+
+    /**
+     * Motion detector class to monitor robot movement and detect blocked states
+     */
+    export class MotionDetector {
+        private accelerationBuffer: AccelerationSample[] = [];
+        public isActive: boolean = false;
+        private currentThrottle: number = 0;
+        private onBlockedCallback: (() => void) | null = null;
+        private lastBlockedCheck: number = 0;
+        // Configuration constants
+        private readonly MOTION_DETECTION_WINDOW = 2000; // 2 seconds in milliseconds
+        private readonly MOTION_THRESHOLD = 100; // mg (milligravity) threshold for motion detection
+        private readonly BLOCKED_THRESHOLD = 50; // mg - below this, robot is considered blocked
+        private readonly BLOCKED_CHECK_INTERVAL = 500; // Check for blocked state every 500ms
+        private readonly MAX_SAMPLES = 50; // Maximum buffer size
+        constructor() {
+            this.reset();
+        }
+
+        /**
+         * Start motion detection when throttle is set
+         * @param throttle - Current throttle value (0-100)
+         */
+        public start(throttle: number): void {
+            this.currentThrottle = Math.abs(throttle);
+            if (this.currentThrottle > MIN_THROTTLE_FOR_MOTION && !this.isActive) {
+                this.isActive = true;
+                this.reset(); // Clear previous samples when starting new motion
+                logger.log(`MotionDetector started with throttle: ${throttle}`);
+            }
+        }
+
+        public stop(): void {
+            this.isActive = false;
+            this.currentThrottle = 0;
+            //logger.log("MotionDetector stopped");
+        }
+
+        public reset(): void {
+            this.accelerationBuffer = [];
+            this.lastBlockedCheck = input.runningTime();
+        }
+
+        // Set callback function to be called when blocked state is detected
+        public setOnBlockedCallback(callback: () => void): void {
+            this.onBlockedCallback = callback;
+        }
+
+        // Update motion detection with current sensor readings
+        public update(): void {
+            if (!this.isActive) return;
+
+            const currentTime = input.runningTime();
+
+            // Get current acceleration magnitude
+            const acc_x = input.acceleration(Dimension.X);
+            const acc_y = input.acceleration(Dimension.Y);
+            const acc_z = input.acceleration(Dimension.Z);
+            const accelerationMagnitude = Math.sqrt(acc_x * acc_x + acc_y * acc_y + acc_z * acc_z);
+
+            // Add new sample to buffer
+            this.accelerationBuffer.push({
+                timestamp: currentTime,
+                acceleration: accelerationMagnitude
+            });
+
+            // Clean old samples (older than detection window)
+            this.accelerationBuffer = this.accelerationBuffer.filter(sample =>
+                currentTime - sample.timestamp <= this.MOTION_DETECTION_WINDOW
+            );
+
+            // Limit buffer size to prevent memory issues
+            if (this.accelerationBuffer.length > this.MAX_SAMPLES) {
+                this.accelerationBuffer = this.accelerationBuffer.slice(-this.MAX_SAMPLES);
+            }
+
+            // Check for blocked state periodically
+            if (currentTime - this.lastBlockedCheck >= this.BLOCKED_CHECK_INTERVAL) {
+                this.checkForBlockedState();
+                this.lastBlockedCheck = currentTime;
+            }
+        }
+
+        // Check if robot is blocked and trigger callback if necessary
+        private checkForBlockedState(): void {
+            const status = this.analyzeMotionStatus();
+            if (status.isBlocked && status.motionConfidence > 70 && status.sampleCount > 10) {
+                logger.warning(`Robot blocked! Throttle: ${this.currentThrottle}, Accel: ${status.averageAcceleration}mg`);
+                logger.log(this.getDebugInfo());
+                if (this.onBlockedCallback) {
+                    this.onBlockedCallback();
+                }
+            }
+        }
+
+        /**
+         * Analyze current motion status
+         * @returns Object containing motion analysis
+         */
+        public analyzeMotionStatus(): {
+            averageAcceleration: number;
+            isInMotion: boolean;
+            isBlocked: boolean;
+            sampleCount: number;
+            motionConfidence: number;
+        } {
+            // Calculate average acceleration if we have samples
+            let averageAcceleration = 0;
+            let isInMotion = false;
+            let isBlocked = false;
+            let motionConfidence = 0;
+
+            if (this.accelerationBuffer.length > 0) {
+                // Compute average acceleration magnitude
+                const totalAcceleration = this.accelerationBuffer.reduce((sum, sample) => sum + sample.acceleration, 0);
+                averageAcceleration = totalAcceleration / this.accelerationBuffer.length;
+
+                // Determine motion status
+                isInMotion = averageAcceleration > this.MOTION_THRESHOLD;
+
+                // Detect if robot is blocked (low acceleration despite commanded speed)
+                const hasSignificantThrottle = this.currentThrottle > MIN_THROTTLE_FOR_MOTION;
+                const hasLowAcceleration = averageAcceleration < this.BLOCKED_THRESHOLD;
+                isBlocked = this.isActive && hasSignificantThrottle && hasLowAcceleration;
+
+                // Calculate motion confidence based on consistency of readings
+                const variance = this.accelerationBuffer.reduce((sum, sample) => {
+                    const diff = sample.acceleration - averageAcceleration;
+                    return sum + (diff * diff);
+                }, 0) / this.accelerationBuffer.length;
+
+                // Lower variance = higher confidence (readings are consistent)
+                motionConfidence = Math.max(0, Math.min(100, 100 - Math.sqrt(variance) / 10));
+            }
+
+            return {
+                averageAcceleration,
+                isInMotion,
+                isBlocked,
+                sampleCount: this.accelerationBuffer.length,
+                motionConfidence
+            };
+        }
+
+        public getDebugInfo(): string {
+            const status = this.analyzeMotionStatus();
+            const currentTime = input.runningTime();
+            let debugInfo = `MotionDetector Status:\n`;
+            debugInfo += `  Active: ${this.isActive}\n`;
+            debugInfo += `  Throttle: ${this.currentThrottle}\n`;
+            debugInfo += `  Avg Acceleration: ${status.averageAcceleration} mg\n`;
+            debugInfo += `  In Motion: ${status.isInMotion}\n`;
+            debugInfo += `  Blocked: ${status.isBlocked}\n`;
+            debugInfo += `  Samples: ${status.sampleCount}\n`;
+            debugInfo += `  Confidence: ${status.motionConfidence}%\n`;
+            return debugInfo;
+        }
+
+    }
 }
