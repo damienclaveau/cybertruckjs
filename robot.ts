@@ -147,7 +147,7 @@ class Robot {
                 break
             case RobotState.searchingBalls:
                 // we are likely spinning around
-                motion.spinAround(-45)
+                motion.setWaypoint(100, -90)
                 break
             case RobotState.searchingHome:
                 /*
@@ -176,12 +176,7 @@ class Robot {
                 */
                 break
             case RobotState.trackingBall:
-                // waypoint == closest ball on Camera
-                let b  = vision.getClosestBall();
-                if (b!=null)
-                    motion.setWaypoint(b.getDistanceInCm(), b.getAngle())
-                else 
-                    logger.log("Tracking a Fantom ball !")
+                // already done in updateObjective
                 break
             case RobotState.goingHome:
                 // waypoint = QR code on Camera

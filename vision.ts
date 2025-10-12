@@ -164,8 +164,8 @@ namespace vision_ns {
         }
 
         getAngleFromX() {
-            const deltaX = this.x + this.w / 2;
-            return deltaX * 52 / HUSKY_SCREEN_WIDTH;
+            const deltaX = this.x;
+            return (deltaX * 52 / HUSKY_SCREEN_WIDTH) - 26;
         }
 
         // Compute coordinates of the TrackedObject relative to the robot position (origin)

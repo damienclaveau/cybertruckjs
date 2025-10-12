@@ -154,12 +154,14 @@ namespace motion {
         if (motionMode == MotionMode.Auto) {
             //  Drive servo and motor with PWM according to updated linear and angular velocities
             //  Set the steering servo position to aim to the waypoint
-            let steering = anglePID.update(waypoint.angle)
+            //let steering = anglePID.update(waypoint.angle)
+            let steering = Math.max(-90, Math.min(90, -waypoint.angle))
             setWheelSteering(steering)
 
             //  Set the servo throttle power depending on the remaining distance to the waypoint
             let speed = speedPID.update(waypoint.distance)
-            setThrottle(speed)
+            //let speed = speedPID.update(waypoint.distance)
+            setThrottle(waypoint.distance)
         }
     }
 

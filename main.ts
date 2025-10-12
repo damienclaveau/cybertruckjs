@@ -8,7 +8,7 @@
 
 // Timing Constants
 const GAME_DURATION = 40; // seconds
-const DELAY_TO_GO_HOME = 15; // seconds
+const DELAY_TO_GO_HOME = 0; // seconds
 const OBJECT_LOST_DELAY = 1; // second
 // Music constants :-)
 const imperial_march = [
@@ -135,7 +135,7 @@ function onForever() {
         return;
     }
     cyclesCount++;
-    logger.log("Cycle " + cyclesCount + " camera mode " + vision.mode);
+    //logger.log("Cycle " + cyclesCount + " camera mode " + vision.mode);
     // TO DO : check if Huskylens capture frequency should be lower, like scheduled
     vision.refresh(); 
     // TO DO : test incrementally all stages    
