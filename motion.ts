@@ -159,9 +159,9 @@ namespace motion {
             setWheelSteering(steering)
 
             //  Set the servo throttle power depending on the remaining distance to the waypoint
-            let speed = speedPID.update(waypoint.distance)
+            let speed = waypoint.distance
             //let speed = speedPID.update(waypoint.distance)
-            setThrottle(waypoint.distance)
+            setThrottle(Math.min(MAX_SPEED, Math.max(MIN_SPEED, speed)))
         }
     }
 

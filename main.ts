@@ -7,9 +7,19 @@
 //#3 Implement the occupenyGrid/positioning/triangulation algorithm based on Tags and Compass
 
 // Timing Constants
-const GAME_DURATION = 40; // seconds
+const GAME_DURATION = 4000; // seconds
 const DELAY_TO_GO_HOME = 0; // seconds
 const OBJECT_LOST_DELAY = 1; // second
+
+// CONSTANTS to control the robot during tests
+//const MIN_SPEED = -50;
+//const MAX_SPEED = 50;
+
+// CONSTANTS to control the robot during contests
+const MIN_SPEED = -100;
+const MAX_SPEED = 100;
+
+
 // Music constants :-)
 const imperial_march = [
     "G4:6", "R:1", "G4:6", "R:1", "G4:6",
@@ -23,8 +33,11 @@ const windows_xp = [
 const police = [
     "A5:4", "D5:4", "A5:4", "D5:4", "A5:4", "D5:4", "A5:4", "D5:4"
 ]
+const police2 = [
+    "A4:4", "D4:4", "A4:4", "D4:4", "A4:4", "D4:4", "A4:4", "D4:4"
+]
 // Parameters
-const FOR_LATER_USE_SERVO = 1
+const CAMERA_SERVO = 1
 const DIRECTION_SERVO = 2
 const GRABBER_MOTOR = 3
 const SPEED_MOTOR = 4
@@ -65,8 +78,9 @@ function init() {
     // Initialize servo controller
     ServoController.init()
     ServoController.centerAllServos()
-    ServoController.testAllServos([FOR_LATER_USE_SERVO, DIRECTION_SERVO])
+    ServoController.testAllServos([CAMERA_SERVO, DIRECTION_SERVO])
     MotorController.testAllMotors([GRABBER_MOTOR, SPEED_MOTOR])
+    ServoController.setServo(CAMERA_SERVO, -10) // tilt the camera a bit down
 
     logger.log("Expansion board health check completed");
     // Initialize physical sensors

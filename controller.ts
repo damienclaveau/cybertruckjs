@@ -242,7 +242,7 @@ namespace MotorController {
         if (servoPort < 1 || servoPort > 8) return
 
         let channel = SERVO_CHANNELS[servoPort - 1]
-        PCA9685.setMotorChannel(channel, -speed)
+        PCA9685.setMotorChannel(channel, speed)
     }
 
     /**

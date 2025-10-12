@@ -8,9 +8,12 @@ enum RobotState {
     atHome // when at home, send status  <name>:<timer> mission:safe_place_reached, wait 5s then resume
 }
 
+const GRAB_SPEED = -70
+const WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS = 200
 
 class Robot {
     state: number
+    timeWhenLostBall = 0;
     //waypoint: motion.Waypoint
     constructor() {
         this.state = RobotState.waiting
@@ -19,6 +22,7 @@ class Robot {
     public setState(state: number) {
         if (this.state != state) {
             this.state = state
+            updateMusic(this.state)
             logger.log("Robot State changed : " + this.state)
             switch (this.state) {
                 case RobotState.atHome:
@@ -45,13 +49,15 @@ class Robot {
                 default:
                     break
             }
+            
+
         }
     }
 
     // Externel explicit state changes
     public doStart() {
         logger.log("Game started at " + bricksGame.startTime + " . Starting collecting balls...")
-        MotorController.setMotor(GRABBER_MOTOR, 50) //grab
+        MotorController.setMotor(GRABBER_MOTOR, GRAB_SPEED) //grab
         if (EXEC_MODE == ExecMode.MakeCode)
             servos.P2.run(100) // for visual simulation
         this.setState(RobotState.searchingBalls)
@@ -59,6 +65,8 @@ class Robot {
     public doStop() {
         logger.log("Game Stopped. Stopping collecting balls.")
         MotorController.setMotor(GRABBER_MOTOR, 0) //stop grabbing
+        MotorController.setMotor(SPEED_MOTOR, 0) //stop moving
+        ServoController.centerAllServos()
         if (EXEC_MODE==ExecMode.MakeCode)
             servos.P2.run(0) // for visual simulation
         this.setState(RobotState.stopped)
@@ -107,16 +115,10 @@ class Robot {
             if (vision.balls.length == 0) {
                 logger.log("All balls LOST or COLLECTED. Back to searching...")
                 this.setState(RobotState.searchingBalls)
+                this.timeWhenLostBall = control.millis()
             }
             else {
-                let closestBall = vision.balls[0];
-                for (let i = 1; i < vision.balls.length; i++) {
-                    if (vision.balls[i].getSizeInPixels() > closestBall.getSizeInPixels()) {
-                        closestBall = vision.balls[i];
-                    }
-                }
-                motion.setWaypoint(100, closestBall.getAngleFromX())
-                logger.log("Closest ball at distance ~" + closestBall.getDistanceInCm() + "cm, angle=" + closestBall.getAngleFromX())
+                
             }
         }
         // Let's find the base zone
@@ -146,8 +148,12 @@ class Robot {
                 motion.setWaypoint(0, 0)
                 break
             case RobotState.searchingBalls:
-                // we are likely spinning around
-                motion.setWaypoint(100, -90)
+                // wait 200ms when losing the ball before spinning around
+                if (this.timeWhenLostBall + WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS < control.millis()) {
+                    motion.setWaypoint(50, -60)
+                } else {
+                    motion.setWaypoint(0, 0)
+                }
                 break
             case RobotState.searchingHome:
                 /*
@@ -176,7 +182,21 @@ class Robot {
                 */
                 break
             case RobotState.trackingBall:
-                // already done in updateObjective
+                let closestBall = vision.balls[0];
+                for (let i = 1; i < vision.balls.length; i++) {
+                    if (vision.balls[i].getSizeInPixels() > closestBall.getSizeInPixels()) {
+                        closestBall = vision.balls[i];
+                    }
+                }
+                const ballAngle = closestBall.getAngleFromX()
+                let steeringAngle = ballAngle * 1.5
+                if (Math.abs(steeringAngle) <= 10) {
+                    steeringAngle = ballAngle
+                } else if (Math.abs(steeringAngle) > 10 && closestBall.y > 120) {
+                    steeringAngle = ballAngle * 3
+                }
+                motion.setWaypoint(100, steeringAngle)
+                logger.log("Closest ball at distance ~" + closestBall.getDistanceInCm() + "cm, angle=" + closestBall.getAngleFromX() + " steering angle " + steeringAngle)
                 break
             case RobotState.goingHome:
                 // waypoint = QR code on Camera
@@ -188,5 +208,28 @@ class Robot {
             default:
                 break
         }
+    }
+}
+function updateMusic(state: number) {
+    music.stopAllSounds()
+    switch (state) {
+        case RobotState.searchingBalls:
+            // Active searching sound
+            music.beginMelody(police, MelodyOptions.ForeverInBackground)
+            break
+        case RobotState.trackingBall:
+            // Focused tracking sound
+            music.beginMelody(imperial_march, MelodyOptions.ForeverInBackground)
+            break
+        case RobotState.searchingHome:
+            // Searching for home sound
+            music.beginMelody(police, MelodyOptions.ForeverInBackground)
+            break
+        case RobotState.goingHome:
+            // Heading home sound
+            music.beginMelody(windows_xp, MelodyOptions.ForeverInBackground)
+            break
+        default:
+            break
     }
 }
