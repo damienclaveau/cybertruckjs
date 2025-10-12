@@ -1,4 +1,8 @@
 
+# CybertruckJS
+
+[![Build](https://github.com/FrequentlyMissedDeadlines/cybertruckjs/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/FrequentlyMissedDeadlines/cybertruckjs/actions/workflows/build.yml)
+
 > Open this page at [https://damienclaveau.github.io/cybertruckjs/](https://damienclaveau.github.io/cybertruckjs/)
 
 ## Use as Extension
