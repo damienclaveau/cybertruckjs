@@ -105,13 +105,18 @@ class Robot {
         }
         if (this.state == RobotState.trackingBall) {
             if (vision.balls.length == 0) {
-                UTBBot.incrementCollectedBallsCount(1);
-                logger.log("Previous ball LOST or COLLECTED. Back to searching...(on screen Balls: " + vision.balls.length + ")")
+                logger.log("All balls LOST or COLLECTED. Back to searching...")
                 this.setState(RobotState.searchingBalls)
             }
             else {
-                logger.log("Tracking the closest ball... (on screen Balls: " + vision.balls.length + ")")
-                // TO DO update waypoint to the closest or the most centered ball
+                let closestBall = vision.balls[0];
+                for (let i = 1; i < vision.balls.length; i++) {
+                    if (vision.balls[i].getSizeInPixels() > closestBall.getSizeInPixels()) {
+                        closestBall = vision.balls[i];
+                    }
+                }
+                motion.setWaypoint(100, closestBall.getAngleFromX())
+                logger.log("Closest ball at distance ~" + closestBall.getDistanceInCm() + "cm, angle=" + closestBall.getAngleFromX())
             }
         }
         // Let's find the base zone

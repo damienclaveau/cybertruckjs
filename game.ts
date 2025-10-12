@@ -34,7 +34,7 @@ class BricksGame {
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.IOBEY)
         UTBBot.newBotStatus(UTBBotCode.BotStatus.WAITING)
         this.mode = GameMode.Slave
-        basic.showIcon(IconNames.Angry)
+        basic.showIcon(IconNames.Skull)
         //music.setTempo(360)
         //music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Funk), music.PlaybackMode.UntilDone)
         logger.log("Robot in Slave mode");
@@ -48,17 +48,18 @@ class BricksGame {
             UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.START)
             UTBBot.newBotStatus(UTBBotCode.BotStatus.MOVING)
             logger.warning(">Start<")
-            music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground)
-            basic.showLeds(`
-            . . . . .
-            . . # . .
-            . # # # .
-            # # # # #
-            . . . . .
-            `)
+            //music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground)
+            basic.showIcon(IconNames.Surprised)
         }
         else {
             logger.log("Asked to Start but not in Slave mode");
+            basic.showLeds(`
+            . . # . .
+            . . # . .
+            . . # . .
+            . . . . .
+            . . # . .
+            `)
         }
     }
     public doStop() {
@@ -68,7 +69,7 @@ class BricksGame {
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.STOP)
         UTBBot.newBotStatus(UTBBotCode.BotStatus.STOPPED)
         logger.warning(">Stop<")
-        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
+        //music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
         basic.showLeds(`
         . . . . .
         . # # # .
@@ -83,8 +84,8 @@ class BricksGame {
         UTBBot.emitAcknowledgement(UTBBotCode.IntercomType.DANGER)
         UTBBot.newBotStatus(UTBBotCode.BotStatus.TO_SAFETY)
         logger.warning(">Danger<")
-        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.BaDing), music.PlaybackMode.InBackground)
-        basic.showIcon(IconNames.Skull)
+        //music._playDefaultBackground(music.builtInPlayableMelody(Melodies.BaDing), music.PlaybackMode.InBackground)
+        basic.showIcon(IconNames.House)
     }
 }
 

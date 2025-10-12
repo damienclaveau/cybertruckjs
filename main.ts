@@ -39,7 +39,7 @@ enum ExecMode {
 
 // Global Variables
 const HUSKY_WIRED = false; // true if the HuskyLens is wired with I2C
-let EXEC_MODE = ExecMode.MakeCode; // change this to WiredMode in order to have the logging on serial
+let EXEC_MODE = ExecMode.WiredMode; // change this to WiredMode in order to have the logging on serial
 let cyclesCount = 0;
 let initialized = false;
 
@@ -96,7 +96,7 @@ function init() {
     // pxt build > error: conflict on yotta setting microbit-dal.bluetooth.enabled between extensions radio and bluetooth
     // initBluetooth();
     // Initialize Radio transmition with Game Server
-    if (EXEC_MODE == ExecMode.GameMode) {
+    if (EXEC_MODE == ExecMode.GameMode || EXEC_MODE == ExecMode.WiredMode) {
         initGameControl();
     }
     initialized = true;

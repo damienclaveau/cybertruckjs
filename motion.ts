@@ -148,7 +148,7 @@ namespace motion {
     }
     
     export function goToWaypoint() {
-        if (MotionMode.Free)
+        if (motionMode == MotionMode.Free)
             return
         //logger.log("Going to Waypoint d="+waypoint.distance+" , a="+waypoint.angle)
         if (motionMode == MotionMode.Auto) {
