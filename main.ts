@@ -67,16 +67,6 @@ function init() {
     ServoController.centerAllServos()
     ServoController.testAllServos([FOR_LATER_USE_SERVO, DIRECTION_SERVO])
     MotorController.testAllMotors([GRABBER_MOTOR, SPEED_MOTOR])
-    // check the Motion API
-    motion.setWheelSteering(0)
-    pause(1000)
-    motion.setWheelSteering(-45)
-    pause(1000)
-    motion.setWheelSteering(0)
-    pause(1000)
-    motion.setWheelSteering(45)
-    pause(1000)
-    motion.setWheelSteering(0)
 
     logger.log("Expansion board health check completed");
     // Initialize physical sensors
@@ -98,6 +88,7 @@ function init() {
     // Initialize Radio transmition with Game Server
     if (EXEC_MODE == ExecMode.GameMode || EXEC_MODE == ExecMode.WiredMode) {
         initGameControl();
+        logger.log("Radio connected");
     }
     initialized = true;
     logger.log("Initialization completed");
@@ -144,6 +135,7 @@ function onForever() {
         return;
     }
     cyclesCount++;
+    logger.log("Cycle " + cyclesCount + " camera mode " + vision.mode);
     // TO DO : check if Huskylens capture frequency should be lower, like scheduled
     vision.refresh(); 
     // TO DO : test incrementally all stages    
