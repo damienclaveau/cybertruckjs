@@ -1,0 +1,51 @@
+name: Build CybertruckJS
+
+on:
+  push:
+    branches: [ master, dev-* ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install PXT CLI
+      run: npm install -g pxt
+      
+    - name: Set PXT target to micro:bit
+      run: pxt target microbit
+      
+    - name: Install project dependencies
+      run: pxt install
+      
+    - name: Build project
+      run: pxt build
+      
+    - name: Verify build output
+      run: |
+        if [ -f "built/binary.hex" ]; then
+          echo "✅ Build successful - binary.hex generated"
+          echo "Build artifacts:"
+          ls -la built/
+        else
+          echo "❌ Build failed - no binary.hex found"
+          exit 1
+        fi
+        
+    - name: Upload micro:bit firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: cybertruckjs
+        path: built/binary.hex
+        retention-days: 30

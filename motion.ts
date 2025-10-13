@@ -148,18 +148,20 @@ namespace motion {
     }
     
     export function goToWaypoint() {
-        if (MotionMode.Free)
+        if (motionMode == MotionMode.Free)
             return
         //logger.log("Going to Waypoint d="+waypoint.distance+" , a="+waypoint.angle)
         if (motionMode == MotionMode.Auto) {
             //  Drive servo and motor with PWM according to updated linear and angular velocities
             //  Set the steering servo position to aim to the waypoint
-            let steering = anglePID.update(waypoint.angle)
+            //let steering = anglePID.update(waypoint.angle)
+            let steering = Math.max(-90, Math.min(90, -waypoint.angle))
             setWheelSteering(steering)
 
             //  Set the servo throttle power depending on the remaining distance to the waypoint
-            let speed = speedPID.update(waypoint.distance)
-            setThrottle(speed)
+            let speed = waypoint.distance
+            //let speed = speedPID.update(waypoint.distance)
+            setThrottle(Math.min(MAX_SPEED, Math.max(MIN_SPEED, speed)))
         }
     }
 

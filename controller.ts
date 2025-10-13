@@ -82,9 +82,9 @@ namespace PCA9685 {
         angle = Math.min(90, Math.max(-90, angle))
 
         // Use measured calibration values:
-        // -90° = 199 PWM, 0° = 333 PWM, +90° = 472 PWM
+        // -90° = 199 PWM, 0° = 332 PWM, +90° = 472 PWM
         // Linear interpolation: PWM = center + (angle/90) * range
-        let centerPWM = 333
+        let centerPWM = 332
         let rangePWM = 472 - 199  // Total range = 273 PWM ticks
         let halfRange = rangePWM / 2  // 136.5 PWM ticks for ±90°
 
@@ -242,7 +242,7 @@ namespace MotorController {
         if (servoPort < 1 || servoPort > 8) return
 
         let channel = SERVO_CHANNELS[servoPort - 1]
-        PCA9685.setMotorChannel(channel, -speed)
+        PCA9685.setMotorChannel(channel, speed)
     }
 
     /**

@@ -118,6 +118,10 @@ namespace vision_ns {
             }
         }
 
+        getSizeInPixels() {
+            return Math.sqrt(this.w ** 2 + this.h ** 2); // frame diagonal
+        }
+
         // Calculate distance (radius) from origin (at middle bottom of screen, think Radar quadrant)
         // good for ponctual objects like Balls ?
         // Origin: x = HUSKY_SCREEN_CENTER_X, y = HUSKY_SCREEN_HEIGHT
@@ -157,6 +161,11 @@ namespace vision_ns {
             const distance = maxDistance - (normalizedY * (maxDistance - minDistance));
 
             return Math.max(minDistance, Math.min(maxDistance, distance));
+        }
+
+        getAngleFromX() {
+            const deltaX = this.x;
+            return (deltaX * 52 / HUSKY_SCREEN_WIDTH) - 26;
         }
 
         // Compute coordinates of the TrackedObject relative to the robot position (origin)
