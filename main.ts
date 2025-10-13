@@ -14,6 +14,8 @@ const OBJECT_LOST_DELAY = 1; // second
 // CONSTANTS to control the robot during tests
 //const MIN_SPEED = -50;
 //const MAX_SPEED = 50;
+const ENABLE_OBSTACLE_DETECTION = true; // Set to true only if obstacle detection features are needed
+const ENABLE_OSD_DISPLAY = true; // Set to false to disable variable display on Husky Lens
 
 // CONSTANTS to control the robot during contests
 const MIN_SPEED = -100;
@@ -36,6 +38,11 @@ const police = [
 const police2 = [
     "A4:4", "D4:4", "A4:4", "D4:4", "A4:4", "D4:4", "A4:4", "D4:4"
 ]
+const backward = [
+    "B:4", "", "B:4", "","B:4", "", "B:4", ""
+]
+
+
 // Parameters
 const CAMERA_SERVO = 1
 const DIRECTION_SERVO = 2
@@ -64,6 +71,15 @@ let vision = new vision_ns.VisionProcessor(
 );
 vision.verbose = true
 //let arena = new position.ArenaMap();
+const motionDetector = new motion.MotionDetector();
+if (ENABLE_OBSTACLE_DETECTION) {
+    motionDetector.setOnBlockedCallback(() => {
+        robot.handleBlockedState();
+    });
+    motionDetector.setOnMovingCallback(() => {
+        robot.handleMovingHeartbeat();
+    });
+}
 
 
 function init() {
@@ -144,20 +160,20 @@ loops.everyInterval(3000, onEvery3s);
 loops.everyInterval(5000, onEvery5s);
 
 function onForever() {
-    // Infinite loop (frequency = ?? Hz)
+    // Infinite loop : this should contain time-critical functions, and not any pause
     if (!initialized) { // https://support.microbit.org/support/solutions/articles/19000053084-forever-runs-before-onstart-finishes
         return;
     }
     cyclesCount++;
-    //logger.log("Cycle " + cyclesCount + " camera mode " + vision.mode);
-    // TO DO : check if Huskylens capture frequency should be lower, like scheduled
     vision.refresh(); 
-    // TO DO : test incrementally all stages    
-    // position.updateSensors();
     //arena.updateRobotPosition(vision.tags, input.compassHeading());
     robot.updateObjective();
     robot.computeNextWaypoint();
     motion.goToWaypoint();
+    if (ENABLE_OBSTACLE_DETECTION)
+    	motionDetector.update();
+    if (ENABLE_OSD_DISPLAY)
+    	logger.update_osd();
 }
 
 // best effort loop

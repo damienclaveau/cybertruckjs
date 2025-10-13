@@ -27,6 +27,8 @@ namespace motion {
         } else {
             MotorController.setMotor(SPEED_MOTOR, speed)
         }
+        // Start/stop motion detector based on throttle
+        if (ENABLE_OBSTACLE_DETECTION) motionDetector.updateThrottle(speed);
     }
 
     export function setWheelSteering(steering: number) {
@@ -162,6 +164,97 @@ namespace motion {
             let speed = waypoint.distance
             //let speed = speedPID.update(waypoint.distance)
             setThrottle(Math.min(MAX_SPEED, Math.max(MIN_SPEED, speed)))
+        }
+    }
+
+
+
+
+    // Motion Detection
+    // the detector is active only when the motor has a minimum speed directive
+    // it is checking every 1s if the robot had an average motion above a threshold
+    export class MotionDetector {
+        private samples: number[] = []
+        private bufferIndex: number = 0
+        private isActive: boolean = false
+        private lastCheck: number = 0
+        public motionIntensity: number = 0
+        private onBlockedCallback: (() => void) | null = null
+        private onMovingCallback: (() => void) | null = null
+        // constants
+        private readonly MAX_SAMPLES = 50
+        private readonly CHECK_INTERVAL = 1000 // 1 seconds
+        private readonly BLOCKED_THRESHOLD = 25 // mg above baseline when blocked
+        private readonly MIN_THROTTLE_FOR_MOTION = 20; // Minimum throttle to expect motion
+        constructor() {
+        }
+        // set Active (true/false) each time the motor speed is above the minimal speed
+        public updateThrottle(throttle: number){ 
+            if (Math.abs(throttle) < this.MIN_THROTTLE_FOR_MOTION) {
+                this.isActive = false;
+            // start the acceleration recording 
+            } else {
+                if (!this.isActive) { 
+                    // Reset all samples to -1
+                    for (let i = 0; i < this.MAX_SAMPLES; i++) {
+                        this.samples[i] = -1
+                     }
+                    this.bufferIndex = 0
+                    this.lastCheck = input.runningTime()
+                    this.isActive = true;
+                }
+            }
+        }
+        public setOnBlockedCallback(callback: () => void): void {
+            this.onBlockedCallback = callback
+        }
+        public setOnMovingCallback(callback: () => void): void {
+            this.onMovingCallback = callback
+        }
+        // collects an acceleration sample in each forever loop execution 
+        public update(): void {
+            if (!this.isActive) return
+            const currentTime = input.runningTime()
+            // Get acceleration magnitude
+            const acc_x = input.acceleration(Dimension.X)
+            const acc_y = input.acceleration(Dimension.Y)
+            const acc_z = input.acceleration(Dimension.Z)
+            const magnitude = Math.sqrt(acc_x * acc_x + acc_y * acc_y + acc_z * acc_z)
+            // Use circular buffer
+            this.samples[this.bufferIndex] = magnitude
+            this.bufferIndex = (this.bufferIndex + 1) % this.MAX_SAMPLES
+            // Check for blocked state periodically
+            // it could be a better idea to get this out of the main loop, as a scheduled task
+            if (currentTime - this.lastCheck >= this.CHECK_INTERVAL) {
+                this.checkBlocked()
+                this.lastCheck = currentTime
+            }
+        }
+
+        private checkBlocked(): void {
+            // Calculate average acceleration over the samples since the motor has started
+            let sum = 0
+            let validSamples = 0
+            for (let i = 0; i < this.MAX_SAMPLES; i++) {
+                if (this.samples[i] >= 0) { // Only count valid samples
+                    sum += this.samples[i]
+                    validSamples++
+                }
+            }
+            if (validSamples < 5) return // Need enough valid samples
+            this.motionIntensity = sum / validSamples // we should do Minus substract the gyro noise
+            logger.log(`Average Motion: ${Math.round(this.motionIntensity)}mg`)
+            // Check if blocked: motor throttle is high, but motion intensity is low
+            if (this.motionIntensity < this.BLOCKED_THRESHOLD) {
+                logger.log(`Robot blocked! Motion: ${Math.round(this.motionIntensity)}mg`)
+                if (this.onBlockedCallback) {
+                    this.onBlockedCallback()
+                }
+            }
+            // Robot is moving
+            else {
+                this.onMovingCallback()
+            }
         }
     }
 
