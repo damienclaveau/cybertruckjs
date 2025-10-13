@@ -10,10 +10,12 @@ enum RobotState {
 
 const GRAB_SPEED = -70
 const WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS = 200
+const MUTE_MUSIC = true
 
 class Robot {
     state: number
     timeWhenLostBall = 0;
+    lastBallSeenOnTheLeft = false;
     //waypoint: motion.Waypoint
     constructor() {
         this.state = RobotState.waiting
@@ -118,7 +120,12 @@ class Robot {
                 this.timeWhenLostBall = control.millis()
             }
             else {
-                
+                for (let i = 0; i < vision.balls.length; i++) {
+                    if (vision.balls[i].getAngleFromX() < 0)
+                        this.lastBallSeenOnTheLeft = true
+                    else
+                        this.lastBallSeenOnTheLeft = false
+                }
             }
         }
         // Let's find the base zone
@@ -150,7 +157,11 @@ class Robot {
             case RobotState.searchingBalls:
                 // wait 200ms when losing the ball before spinning around
                 if (this.timeWhenLostBall + WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS < control.millis()) {
-                    motion.setWaypoint(50, -60)
+                    if (this.lastBallSeenOnTheLeft) {
+                        motion.setWaypoint(100, -60)
+                    } else {
+                        motion.setWaypoint(100, 60)
+                    }
                 } else {
                     motion.setWaypoint(0, 0)
                 }
@@ -212,6 +223,7 @@ class Robot {
 }
 function updateMusic(state: number) {
     music.stopAllSounds()
+    if (MUTE_MUSIC) return
     switch (state) {
         case RobotState.searchingBalls:
             // Active searching sound
