@@ -78,6 +78,7 @@ class Robot {
     public askGoingHome() {
         logger.log("Should I go home ?")
         //we can decide to ignore or not the instruction from Game controller
+        this.doGoHome();
     }
     public doGoHome() {
         logger.log("Going home. If location unknown, look for it.")
@@ -185,7 +186,7 @@ class Robot {
                 //let wp = motion.getWaypoint();
                 //motion.setWaypoint(wp.distance * -1, wp.angle * -1)
                 // let's try something simple to start with
-                motion.moveStraight(-20) 
+                motion.moveStraight(-50)
                 // if the robot succeeds to move during 1s, the motion detection should notify the bot that it is unblocked
                 // au pire, on assume qu'on s'est debloques, et on restore le previous state...
                 this.setState(this.previousState);

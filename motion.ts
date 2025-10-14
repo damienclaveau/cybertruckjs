@@ -46,9 +46,9 @@ namespace motion {
             motionMode = MotionMode.Free
             setWheelSteering(0)
             if (distance > 0)
-                setThrottle(cruiseSpeed)
+                setThrottle(fullSpeed)
             else
-                setThrottle(cruiseSpeed*-1)
+                setThrottle(fullSpeed*-1)
             // distance in cm, cruiseLinearSpeed in cm/s, result in milliseconds
             let runtime = Math.abs((distance / cruiseLinearSpeed) *1000)
             logger.log("Expected distance "+distance+"cm. Let the motor run for "+runtime+"ms")
@@ -184,9 +184,9 @@ namespace motion {
         private onBlockedCallback: (() => void) | null = null
         private onMovingCallback: (() => void) | null = null
         // constants
-        private readonly MAX_SAMPLES = 50
+        private readonly MAX_SAMPLES = 5
         private readonly CHECK_INTERVAL = 1000 // 1 seconds
-        private readonly BLOCKED_THRESHOLD = 25 // mg above baseline when blocked
+        private readonly BLOCKED_THRESHOLD = 130 // mg above baseline when blocked
         private readonly MIN_THROTTLE_FOR_MOTION = 20; // Minimum throttle to expect motion
         constructor() {
         }
@@ -221,10 +221,11 @@ namespace motion {
             const acc_x = input.acceleration(Dimension.X)
             const acc_y = input.acceleration(Dimension.Y)
             const acc_z = input.acceleration(Dimension.Z)
-            const magnitude = Math.sqrt(acc_x * acc_x + acc_y * acc_y + acc_z * acc_z)
+            const magnitude = Math.sqrt(acc_x * acc_x + acc_z * acc_z )
             // Use circular buffer
             this.samples[this.bufferIndex] = magnitude
             this.bufferIndex = (this.bufferIndex + 1) % this.MAX_SAMPLES
+            logger.log(`instant Motion: ` + magnitude)
             // Check for blocked state periodically
             // it could be a better idea to get this out of the main loop, as a scheduled task
             if (currentTime - this.lastCheck >= this.CHECK_INTERVAL) {

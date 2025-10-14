@@ -24,7 +24,7 @@ namespace logger {
     }
 
     export function initializeLogToScreen() {
-        if (HUSKY_WIRED) {
+        if (HUSKY_WIRED && LOG_TO_OSD) {
             huskylens.clearOSD;
             console.addListener(log_osd)
         }

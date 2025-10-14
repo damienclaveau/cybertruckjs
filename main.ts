@@ -16,7 +16,7 @@ const OBJECT_LOST_DELAY = 1; // second
 //const MAX_SPEED = 50;
 const ENABLE_OBSTACLE_DETECTION = true; // Set to true only if obstacle detection features are needed
 const ENABLE_OSD_DISPLAY = true; // Set to false to disable variable display on Husky Lens
-
+const LOG_TO_OSD = false;
 // CONSTANTS to control the robot during contests
 const MIN_SPEED = -100;
 const MAX_SPEED = 100;
@@ -58,7 +58,7 @@ enum ExecMode {
 }
 
 // Global Variables
-const HUSKY_WIRED = false; // true if the HuskyLens is wired with I2C
+const HUSKY_WIRED = true; // true if the HuskyLens is wired with I2C
 let EXEC_MODE = ExecMode.WiredMode; // change this to WiredMode in order to have the logging on serial
 let cyclesCount = 0;
 let initialized = false;
@@ -94,7 +94,8 @@ function init() {
     // Initialize servo controller
     ServoController.init()
     ServoController.centerAllServos()
-    ServoController.testAllServos([CAMERA_SERVO, DIRECTION_SERVO])
+    // stop punching the camera
+    //ServoController.testAllServos([CAMERA_SERVO, DIRECTION_SERVO])
     MotorController.testAllMotors([GRABBER_MOTOR, SPEED_MOTOR])
     ServoController.setServo(CAMERA_SERVO, -10) // tilt the camera a bit down
 
