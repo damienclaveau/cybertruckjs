@@ -40,7 +40,7 @@ namespace motion {
     }
 
     //////////////////////////////////////////////////////////////////
-    // Naive straight movement
+    // Straight movement : warning : BLOCKING function
     export function moveStraight(distance: number){
         try {
             motionMode = MotionMode.Free
@@ -50,7 +50,9 @@ namespace motion {
             else
                 setThrottle(cruiseSpeed*-1)
             // distance in cm, cruiseLinearSpeed in cm/s, result in milliseconds
-            pause((distance / cruiseLinearSpeed) * 1000)
+            let runtime = Math.abs((distance / cruiseLinearSpeed) *1000)
+            logger.log("Expected distance "+distance+"cm. Let the motor run for "+runtime+"ms")
+            pause(runtime)
         } catch (error) {
             console.debug('An error occurred:' + error);
         } finally {
@@ -60,7 +62,7 @@ namespace motion {
     }
 
     //////////////////////////////////////////////////////////////////
-    // Naive Spinning around
+    // Naive Spinning around : warning : BLOCKING function
     export function spinAround(angle: number) {
         let currentHeading = input.compassHeading()
         let targetHeading = normalizeHeading(currentHeading + angle)
@@ -247,13 +249,13 @@ namespace motion {
             // Check if blocked: motor throttle is high, but motion intensity is low
             if (this.motionIntensity < this.BLOCKED_THRESHOLD) {
                 logger.log(`Robot blocked! Motion: ${Math.round(this.motionIntensity)}mg`)
-                if (this.onBlockedCallback) {
+                if (this.onBlockedCallback)
                     this.onBlockedCallback()
-                }
             }
             // Robot is moving
             else {
-                this.onMovingCallback()
+                if (this.onMovingCallback)
+                    this.onMovingCallback()
             }
         }
     }

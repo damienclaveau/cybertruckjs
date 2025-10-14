@@ -184,9 +184,12 @@ class Robot {
                 // reverse previous Waypoint
                 //let wp = motion.getWaypoint();
                 //motion.setWaypoint(wp.distance * -1, wp.angle * -1)
-                motion.moveStraight(-30) // let's try something simple to start with
+                // let's try something simple to start with
+                motion.moveStraight(-20) 
                 // if the robot succeeds to move during 1s, the motion detection should notify the bot that it is unblocked
-                
+                // au pire, on assume qu'on s'est debloques, et on restore le previous state...
+                this.setState(this.previousState);
+                break;
             case RobotState.searchingHome:
                 /*
                 // waypoint = approximate direction of the base camp
