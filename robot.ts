@@ -18,6 +18,7 @@ class Robot {
     previousState: number
     timeWhenLostBall = 0;
     lastBallSeenOnTheLeft = false;
+    lastUnblockingAttempt = 0;
     //waypoint: motion.Waypoint
     constructor() {
         this.state = RobotState.waiting
@@ -182,15 +183,16 @@ class Robot {
                 break
             
             case RobotState.unblocking:
-                // reverse previous Waypoint
-                //let wp = motion.getWaypoint();
-                //motion.setWaypoint(wp.distance * -1, wp.angle * -1)
-                // let's try something simple to start with
-                motion.moveStraight(-50)
-                // if the robot succeeds to move during 1s, the motion detection should notify the bot that it is unblocked
-                // au pire, on assume qu'on s'est debloques, et on restore le previous state...
+                // try the next possible move to get out of the blocked state
+                this.lastUnblockingAttempt++;
+                this.lastUnblockingAttempt = this.lastUnblockingAttempt % motion.clearanceMoves.length
+                motion.makeaMove(
+                    motion.clearanceMoves[this.lastUnblockingAttempt]["throttle"],
+                    motion.clearanceMoves[this.lastUnblockingAttempt]["steering"],
+                    motion.clearanceMoves[this.lastUnblockingAttempt]["duration"])
                 this.setState(this.previousState);
                 break;
+
             case RobotState.searchingHome:
                 /*
                 // waypoint = approximate direction of the base camp

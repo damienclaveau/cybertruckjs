@@ -1,19 +1,9 @@
-// Known bugs :
-//#1 The gamebricksGame object is always started, can not figure out why
-//#2 the getClosestBall function should determine the distance based on the y axis, the lower the closer, instead of the visual ratio
-// To do :
-//#1 Implement and Test the motion functions, for free motion (spin) and PID controlled motion(track)
-//#2 Find the proper angle for the camera in order to determine min and max distance constants, and to calibrate the QR codes detection
-//#3 Implement the occupenyGrid/positioning/triangulation algorithm based on Tags and Compass
-
 // Timing Constants
 const GAME_DURATION = 4000; // seconds
 const DELAY_TO_GO_HOME = 0; // seconds
 const OBJECT_LOST_DELAY = 1; // second
 
 // CONSTANTS to control the robot during tests
-//const MIN_SPEED = -50;
-//const MAX_SPEED = 50;
 const ENABLE_OBSTACLE_DETECTION = true; // Set to true only if obstacle detection features are needed
 const ENABLE_OSD_DISPLAY = true; // Set to false to disable variable display on Husky Lens
 const LOG_TO_OSD = false;
@@ -95,7 +85,7 @@ function init() {
     ServoController.init()
     ServoController.centerAllServos()
     // stop punching the camera
-    //ServoController.testAllServos([CAMERA_SERVO, DIRECTION_SERVO])
+    ServoController.testAllServos([DIRECTION_SERVO])
     MotorController.testAllMotors([GRABBER_MOTOR, SPEED_MOTOR])
     ServoController.setServo(CAMERA_SERVO, -10) // tilt the camera a bit down
 
@@ -113,9 +103,6 @@ function init() {
             logger.log("Camera connected");
         }
     }
-    // Disable Bluetooth for the moment
-    // pxt build > error: conflict on yotta setting microbit-dal.bluetooth.enabled between extensions radio and bluetooth
-    // initBluetooth();
     // Initialize Radio transmition with Game Server
     if (EXEC_MODE == ExecMode.GameMode || EXEC_MODE == ExecMode.WiredMode) {
         initGameControl();
@@ -123,7 +110,6 @@ function init() {
     }
     initialized = true;
     logger.log("Initialization completed");
-    //test_cybertruckjs.testGetDistance()
 }
 
 init();

@@ -18,6 +18,13 @@ namespace motion {
     const cruiseLinearSpeed = 30 // cm/s
     const spinSpeed = 50
     const spinAngularSpeed = 20 // degree/s
+    export const clearanceMoves = [
+        { throttle: fullSpeed * -1, steering:   0, duration: 3000 },
+        { throttle: fullSpeed * -1, steering: -45, duration: 3000 },
+        { throttle: fullSpeed * -1, steering:  45, duration: 3000 },
+        { throttle: fullSpeed * -1, steering: -90, duration: 3000 },
+        { throttle: fullSpeed * -1, steering:  90, duration: 3000 },
+        ];
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Motor Control
@@ -42,25 +49,32 @@ namespace motion {
     //////////////////////////////////////////////////////////////////
     // Straight movement : warning : BLOCKING function
     export function moveStraight(distance: number){
-        try {
             motionMode = MotionMode.Free
             setWheelSteering(0)
-            if (distance > 0)
-                setThrottle(fullSpeed)
-            else
-                setThrottle(fullSpeed*-1)
+            let s = fullSpeed
+            if (distance < 0)
+                s = s * -1
             // distance in cm, cruiseLinearSpeed in cm/s, result in milliseconds
             let runtime = Math.abs((distance / cruiseLinearSpeed) *1000)
-            logger.log("Expected distance "+distance+"cm. Let the motor run for "+runtime+"ms")
-            pause(runtime)
+            makeaMove(fullSpeed * -1, 0, runtime)
+    }
+
+    // Arbitrary movement : warning : BLOCKING function
+    export function makeaMove(throttle: number, steering: number, duration: number) {
+        try {
+            motionMode = MotionMode.Free
+            logger.log(`Free move throttle: ${throttle} steering: ${steering}  duration: ${duration}`)
+            setWheelSteering(steering)
+            setThrottle(throttle)
+            pause(duration)
         } catch (error) {
             console.debug('An error occurred:' + error);
         } finally {
             motionMode = MotionMode.Auto
             setThrottle(0)
+            setWheelSteering(0)
         }
     }
-
     //////////////////////////////////////////////////////////////////
     // Naive Spinning around : warning : BLOCKING function
     export function spinAround(angle: number) {
@@ -77,11 +91,11 @@ namespace motion {
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // Wait until we reach the target heading (with tolerance)
             // never do this in MakeCode mode : it ends up in an infinite loop
-            if (EXEC_MODE != ExecMode.MakeCode)
-                pauseUntil(() => {
-                    let currentCompass = input.compassHeading()
-                    return isHeadingReached(currentCompass, targetHeading, 15) // 15 degree tolerance
-                })
+            //if (EXEC_MODE != ExecMode.MakeCode)
+            //    pauseUntil(() => {
+            //        let currentCompass = input.compassHeading()
+            //        return isHeadingReached(currentCompass, targetHeading, 15) // 15 degree tolerance
+            //    })
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             setThrottle(0)
             setWheelSteering(0)
