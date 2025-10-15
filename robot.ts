@@ -185,11 +185,15 @@ class Robot {
             case RobotState.unblocking:
                 // try the next possible move to get out of the blocked state
                 this.lastUnblockingAttempt++;
+                /*
                 this.lastUnblockingAttempt = this.lastUnblockingAttempt % motion.clearanceMoves.length
                 motion.makeaMove(
                     motion.clearanceMoves[this.lastUnblockingAttempt]["throttle"],
                     motion.clearanceMoves[this.lastUnblockingAttempt]["steering"],
                     motion.clearanceMoves[this.lastUnblockingAttempt]["duration"])
+                */
+                this.lastUnblockingAttempt = this.lastUnblockingAttempt % motion.clearanceMovesSequences.length
+                motion.doFreeMoveSequence(motion.clearanceMovesSequences[this.lastUnblockingAttempt])
                 this.setState(this.previousState);
                 break;
 

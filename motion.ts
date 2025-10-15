@@ -25,7 +25,16 @@ namespace motion {
         { throttle: fullSpeed * -1, steering: -90, duration: 3000 },
         { throttle: fullSpeed * -1, steering:  90, duration: 3000 },
         ];
-
+    export const clearanceMovesSequences = [
+        [{ throttle: fullSpeed * -1, steering: -90, duration: 1000 },
+        { throttle: fullSpeed * -1, steering: 0, duration: 1000 },
+        { throttle: fullSpeed * 1, steering: 90, duration: 1500 }],
+        [{ throttle: fullSpeed * -1, steering: 90, duration: 1000 },
+        { throttle: fullSpeed * -1, steering: 0, duration: 1000 },
+        { throttle: fullSpeed * 1, steering: -90, duration: 1500 }],
+        [{ throttle: fullSpeed * -1, steering: 0, duration: 2000 },
+            { throttle: fullSpeed * 1, steering: 90, duration: 3000 }]
+    ];
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Motor Control
     export function setThrottle(speed: number) {
@@ -57,6 +66,13 @@ namespace motion {
             // distance in cm, cruiseLinearSpeed in cm/s, result in milliseconds
             let runtime = Math.abs((distance / cruiseLinearSpeed) *1000)
             makeaMove(fullSpeed * -1, 0, runtime)
+    }
+    // Arbitrary sequence of movements
+    export function doFreeMoveSequence(moves: { throttle: number; steering: number, duration: number }[]) {
+        for (let i = 0; i < moves.length; i++) {
+            let move = moves[i];
+            makeaMove(move.throttle, move.steering, move.duration)
+        }
     }
 
     // Arbitrary movement : warning : BLOCKING function
@@ -199,8 +215,8 @@ namespace motion {
         private onMovingCallback: (() => void) | null = null
         // constants
         private readonly MAX_SAMPLES = 5
-        private readonly CHECK_INTERVAL = 1000 // 1 seconds
-        private readonly BLOCKED_THRESHOLD = 130 // mg above baseline when blocked
+        private readonly CHECK_INTERVAL = 300 // 1 seconds
+        private readonly BLOCKED_THRESHOLD = 150 // mg above baseline when blocked
         private readonly MIN_THROTTLE_FOR_MOTION = 20; // Minimum throttle to expect motion
         constructor() {
         }
@@ -210,7 +226,7 @@ namespace motion {
                 this.isActive = false;
             // start the acceleration recording 
             } else {
-                if (!this.isActive) { 
+                if (!this.isActive) {  
                     // Reset all samples to -1
                     for (let i = 0; i < this.MAX_SAMPLES; i++) {
                         this.samples[i] = -1
