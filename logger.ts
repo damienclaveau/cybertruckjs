@@ -1,17 +1,30 @@
 namespace logger {
 
+    // OSD Display positions for telemetry data
+    enum OSDPosition {
+        LINE_1 = 30,        // Robot state
+        LINE_2 = 60,        // Waypoint info
+        LINE_3 = 90,        // Tags count
+        LINE_4 = 120,       // Balls count
+        LINE_5 = 150,       // Ball distance
+        LINE_6 = 180,       // Ball angle
+        LINE_7 = 200,       // Acceleration
+        TELEMETRY_X = 150,
+        LOG_X = 0
+    }
+
     // Replicate console logs to Huskylens
     // (only warnings and errors)
     let osd_log_line_nb = 0
     export function log_osd(priority: ConsolePriority, msg: string) {
         if ((HUSKY_WIRED) && (priority == ConsolePriority.Warning || priority==ConsolePriority.Error))
-            huskylens.writeOSD(msg, 0, osd_log_line_nb * 20)
+            huskylens.writeOSD(msg, OSDPosition.LOG_X, osd_log_line_nb * 20)
         osd_log_line_nb = osd_log_line_nb + 1
         if (osd_log_line_nb == 19) { osd_log_line_nb = 1 }
     }
 
     export function initializeLogToScreen() {
-        if (HUSKY_WIRED) {
+        if (HUSKY_WIRED && LOG_TO_OSD) {
             huskylens.clearOSD;
             console.addListener(log_osd)
         }
@@ -69,29 +82,40 @@ namespace logger {
         }
     }
 
-    export function send_telemetry() {
-        //  Log metrics and update Display
+    export function update_osd() {
+        //  Update OSD Display with telemetry data
         if (HUSKY_WIRED) {
             if(robot != null) {
-                huskylens.writeOSD("state " + robot.state, 150, 30)
+                huskylens.writeOSD(`state ${robot.state}`, OSDPosition.TELEMETRY_X, OSDPosition.LINE_1)
             } 
             let wp = motion.getWaypoint()
             if (wp != null) {
-                huskylens.writeOSD("WP " + wp.distance + " " + wp.angle, 150, 30)
+                huskylens.writeOSD(`WP ${wp.distance} ${wp.angle}`, OSDPosition.TELEMETRY_X, OSDPosition.LINE_2)
             }
             if (vision != null) {
-                huskylens.writeOSD("tags " + vision.tags.length, 150, 90)
-                huskylens.writeOSD("balls " + vision.balls.length, 150, 120)
+                huskylens.writeOSD(`tags ${vision.tags.length}`, OSDPosition.TELEMETRY_X, OSDPosition.LINE_3)
+                huskylens.writeOSD(`balls ${vision.balls.length}`, OSDPosition.TELEMETRY_X, OSDPosition.LINE_4)
                 let b = vision.getClosestBall();
                 if (b != null) {
-                    huskylens.writeOSD("ball dist: " + b.getDistanceInPixels(), 150, 150)
-                    huskylens.writeOSD("ball angl: " + b.getAngleDegrees(), 150, 180)
+                    huskylens.writeOSD(`ball dist: ${b.getDistanceInPixels()}`, OSDPosition.TELEMETRY_X, OSDPosition.LINE_5)
+                    huskylens.writeOSD(`ball angl: ${b.getAngleDegrees()}`, OSDPosition.TELEMETRY_X, OSDPosition.LINE_6)
                 }
+                if (ENABLE_OBSTACLE_DETECTION)
+                    huskylens.writeOSD(`Motion: ${motionDetector.motionIntensity}`, OSDPosition.TELEMETRY_X, OSDPosition.LINE_7)
+
             }
         }
+    }
 
+    export function write_telemetry() {
+        //  Log telemetry data to datalogger
         if ([ExecMode.MakeCode, ExecMode.WiredMode].indexOf(EXEC_MODE) >= 0) {
-            datalogger.log(datalogger.createCV("balls", vision.balls.length))
+            datalogger.log(
+                datalogger.createCV("state", robot.state),
+                datalogger.createCV("balls", vision.balls.length),
+                datalogger.createCV("motion", motionDetector.motionIntensity)
+            )
         }
     }
+
 }

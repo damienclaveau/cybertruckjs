@@ -5,6 +5,7 @@ enum RobotState {
     trackingBall,  //Game.State == Started
     searchingHome, //Game.State == Started
     goingHome,     //Game.State == Started
+    unblocking,    //Game.State == Started
     atHome // when at home, send status  <name>:<timer> mission:safe_place_reached, wait 5s then resume
 }
 
@@ -14,8 +15,10 @@ const MUTE_MUSIC = true
 
 class Robot {
     state: number
+    previousState: number
     timeWhenLostBall = 0;
     lastBallSeenOnTheLeft = false;
+    lastUnblockingAttempt = 0;
     //waypoint: motion.Waypoint
     constructor() {
         this.state = RobotState.waiting
@@ -76,12 +79,26 @@ class Robot {
     public askGoingHome() {
         logger.log("Should I go home ?")
         //we can decide to ignore or not the instruction from Game controller
+        this.doGoHome();
     }
     public doGoHome() {
         logger.log("Going home. If location unknown, look for it.")
         // no more balls, or time is over, or acknolewdging danger mode
         this.setState(RobotState.searchingHome)
         
+    }
+
+    // try to get out of a blocked state
+    public handleBlockedState(): void {
+        if (this.state != RobotState.unblocking) {
+            this.previousState = this.state;
+            this.setState(RobotState.unblocking);
+        }
+    }
+    // Robot is unblocked
+    public handleMovingHeartbeat(): void {
+        if (this.state == RobotState.unblocking)
+            this.setState(this.previousState);
     }
 
     // Autonomous decision making
@@ -95,8 +112,6 @@ class Robot {
         if ((bricksGame.remainingTime() < DELAY_TO_GO_HOME)
             &&((this.state == RobotState.searchingBalls)
             || (this.state == RobotState.trackingBall))) {
-                
-            logger.log("########### GO HOME ###################")
             this.doGoHome()
         }
         
@@ -166,6 +181,15 @@ class Robot {
                     motion.setWaypoint(0, 0)
                 }
                 break
+            
+            case RobotState.unblocking:
+                // try the next possible move to get out of the blocked state
+                this.lastUnblockingAttempt++;
+                this.lastUnblockingAttempt = this.lastUnblockingAttempt % motion.clearanceMovesSequences.length
+                motion.doFreeMoveSequence(motion.clearanceMovesSequences[this.lastUnblockingAttempt])
+                this.setState(this.previousState);
+                break;
+
             case RobotState.searchingHome:
                 /*
                 // waypoint = approximate direction of the base camp
@@ -220,7 +244,9 @@ class Robot {
                 break
         }
     }
+
 }
+
 function updateMusic(state: number) {
     music.stopAllSounds()
     if (MUTE_MUSIC) return
@@ -240,6 +266,10 @@ function updateMusic(state: number) {
         case RobotState.goingHome:
             // Heading home sound
             music.beginMelody(windows_xp, MelodyOptions.ForeverInBackground)
+            break
+        case RobotState.unblocking:
+            // Backward motion sound
+            music.beginMelody(backward, MelodyOptions.ForeverInBackground)
             break
         default:
             break

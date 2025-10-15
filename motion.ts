@@ -18,7 +18,16 @@ namespace motion {
     const cruiseLinearSpeed = 30 // cm/s
     const spinSpeed = 50
     const spinAngularSpeed = 20 // degree/s
-
+    export const clearanceMovesSequences = [
+        [{ throttle: fullSpeed * -1, steering: -90, duration: 1000 },
+        { throttle: fullSpeed * -1, steering: 0, duration: 1000 },
+        { throttle: fullSpeed * 1, steering: 90, duration: 1500 }],
+        [{ throttle: fullSpeed * -1, steering: 90, duration: 1000 },
+        { throttle: fullSpeed * -1, steering: 0, duration: 1000 },
+        { throttle: fullSpeed * 1, steering: -90, duration: 1500 }],
+        [{ throttle: fullSpeed * -1, steering: 0, duration: 2000 },
+            { throttle: fullSpeed * 1, steering: 90, duration: 3000 }]
+    ];
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Motor Control
     export function setThrottle(speed: number) {
@@ -27,6 +36,8 @@ namespace motion {
         } else {
             MotorController.setMotor(SPEED_MOTOR, speed)
         }
+        // Start/stop motion detector based on throttle
+        if (ENABLE_OBSTACLE_DETECTION) motionDetector.updateThrottle(speed);
     }
 
     export function setWheelSteering(steering: number) {
@@ -38,27 +49,42 @@ namespace motion {
     }
 
     //////////////////////////////////////////////////////////////////
-    // Naive straight movement
+    // Straight movement : warning : BLOCKING function
     export function moveStraight(distance: number){
-        try {
             motionMode = MotionMode.Free
             setWheelSteering(0)
-            if (distance > 0)
-                setThrottle(cruiseSpeed)
-            else
-                setThrottle(cruiseSpeed*-1)
+            let s = fullSpeed
+            if (distance < 0)
+                s = s * -1
             // distance in cm, cruiseLinearSpeed in cm/s, result in milliseconds
-            pause((distance / cruiseLinearSpeed) * 1000)
+            let runtime = Math.abs((distance / cruiseLinearSpeed) *1000)
+            doFreeMove(fullSpeed * -1, 0, runtime)
+    }
+    // Arbitrary sequence of movements
+    export function doFreeMoveSequence(moves: { throttle: number; steering: number, duration: number }[]) {
+        for (let i = 0; i < moves.length; i++) {
+            let move = moves[i];
+            doFreeMove(move.throttle, move.steering, move.duration)
+        }
+    }
+    // Arbitrary movement : warning : BLOCKING function
+    export function doFreeMove(throttle: number, steering: number, duration: number) {
+        try {
+            motionMode = MotionMode.Free
+            logger.log(`Free move throttle: ${throttle} steering: ${steering} duration: ${duration}`)
+            setWheelSteering(steering)
+            setThrottle(throttle)
+            pause(duration)
         } catch (error) {
             console.debug('An error occurred:' + error);
         } finally {
             motionMode = MotionMode.Auto
             setThrottle(0)
+            setWheelSteering(0)
         }
     }
-
     //////////////////////////////////////////////////////////////////
-    // Naive Spinning around
+    // Naive Spinning around : warning : BLOCKING function
     export function spinAround(angle: number) {
         let currentHeading = input.compassHeading()
         let targetHeading = normalizeHeading(currentHeading + angle)
@@ -73,11 +99,11 @@ namespace motion {
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // Wait until we reach the target heading (with tolerance)
             // never do this in MakeCode mode : it ends up in an infinite loop
-            if (EXEC_MODE != ExecMode.MakeCode)
-                pauseUntil(() => {
-                    let currentCompass = input.compassHeading()
-                    return isHeadingReached(currentCompass, targetHeading, 15) // 15 degree tolerance
-                })
+            //if (EXEC_MODE != ExecMode.MakeCode)
+            //    pauseUntil(() => {
+            //        let currentCompass = input.compassHeading()
+            //        return isHeadingReached(currentCompass, targetHeading, 15) // 15 degree tolerance
+            //    })
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             setThrottle(0)
             setWheelSteering(0)
@@ -162,6 +188,98 @@ namespace motion {
             let speed = waypoint.distance
             //let speed = speedPID.update(waypoint.distance)
             setThrottle(Math.min(MAX_SPEED, Math.max(MIN_SPEED, speed)))
+        }
+    }
+
+
+
+
+    // Motion Detection
+    // the detector is active only when the motor has a minimum speed directive
+    // it is checking every 1s if the robot had an average motion above a threshold
+    export class MotionDetector {
+        private samples: number[] = []
+        private bufferIndex: number = 0
+        private isActive: boolean = false
+        private lastCheck: number = 0
+        public motionIntensity: number = 0
+        private onBlockedCallback: (() => void) | null = null
+        private onMovingCallback: (() => void) | null = null
+        // constants
+        private readonly MAX_SAMPLES = 5
+        private readonly CHECK_INTERVAL = 500 // 0.5 second
+        private readonly BLOCKED_THRESHOLD = OBSTACLE_DETECTION_THRESHOLD // mg above baseline when blocked
+        private readonly MIN_THROTTLE_FOR_MOTION = 20; // Minimum throttle to expect motion
+        constructor() {
+        }
+        // set Active (true/false) each time the motor speed is above the minimal speed
+        public updateThrottle(throttle: number){ 
+            if (Math.abs(throttle) < this.MIN_THROTTLE_FOR_MOTION) {
+                this.isActive = false;
+            // start the acceleration recording 
+            } else {
+                if (!this.isActive) {  
+                    // Reset all samples to -1
+                    for (let i = 0; i < this.MAX_SAMPLES; i++) {
+                        this.samples[i] = -1
+                     }
+                    this.bufferIndex = 0
+                    this.lastCheck = input.runningTime()
+                    this.isActive = true;
+                }
+            }
+        }
+        public setOnBlockedCallback(callback: () => void): void {
+            this.onBlockedCallback = callback
+        }
+        public setOnMovingCallback(callback: () => void): void {
+            this.onMovingCallback = callback
+        }
+        // collects an acceleration sample in each forever loop execution 
+        public update(): void {
+            if (!this.isActive) return
+            const currentTime = input.runningTime()
+            // Get acceleration magnitude
+            const acc_x = input.acceleration(Dimension.X)
+            const acc_y = input.acceleration(Dimension.Y)
+            const acc_z = input.acceleration(Dimension.Z)
+            const magnitude = Math.sqrt(acc_x * acc_x + acc_z * acc_z )
+            // Use circular buffer
+            this.samples[this.bufferIndex] = magnitude
+            this.bufferIndex = (this.bufferIndex + 1) % this.MAX_SAMPLES
+            logger.log(`instant Motion: ` + magnitude)
+            // Check for blocked state periodically
+            // it could be a better idea to get this out of the main loop, as a scheduled task
+            if (currentTime - this.lastCheck >= this.CHECK_INTERVAL) {
+                this.checkBlocked()
+                this.lastCheck = currentTime
+            }
+        }
+
+        private checkBlocked(): void {
+            // Calculate average acceleration over the samples since the motor has started
+            let sum = 0
+            let validSamples = 0
+            for (let i = 0; i < this.MAX_SAMPLES; i++) {
+                if (this.samples[i] >= 0) { // Only count valid samples
+                    sum += this.samples[i]
+                    validSamples++
+                }
+            }
+            if (validSamples < 5) return // Need enough valid samples
+            this.motionIntensity = sum / validSamples // we should do Minus substract the gyro noise
+            logger.log(`Average Motion: ${Math.round(this.motionIntensity)}mg`)
+            // Check if blocked: motor throttle is high, but motion intensity is low
+            if (this.motionIntensity < this.BLOCKED_THRESHOLD) {
+                logger.log(`Robot blocked! Motion: ${Math.round(this.motionIntensity)}mg`)
+                if (this.onBlockedCallback)
+                    this.onBlockedCallback()
+            }
+            // Robot is moving
+            else {
+                if (this.onMovingCallback)
+                    this.onMovingCallback()
+            }
         }
     }
 

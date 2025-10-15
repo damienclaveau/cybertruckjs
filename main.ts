@@ -1,20 +1,13 @@
-// Known bugs :
-//#1 The gamebricksGame object is always started, can not figure out why
-//#2 the getClosestBall function should determine the distance based on the y axis, the lower the closer, instead of the visual ratio
-// To do :
-//#1 Implement and Test the motion functions, for free motion (spin) and PID controlled motion(track)
-//#2 Find the proper angle for the camera in order to determine min and max distance constants, and to calibrate the QR codes detection
-//#3 Implement the occupenyGrid/positioning/triangulation algorithm based on Tags and Compass
-
 // Timing Constants
 const GAME_DURATION = 4000; // seconds
 const DELAY_TO_GO_HOME = 0; // seconds
 const OBJECT_LOST_DELAY = 1; // second
 
 // CONSTANTS to control the robot during tests
-//const MIN_SPEED = -50;
-//const MAX_SPEED = 50;
-
+const ENABLE_OBSTACLE_DETECTION = true; // Set to true only if obstacle detection features are needed
+const ENABLE_OSD_DISPLAY = true; // Set to false to disable variable display on Husky Lens
+const OBSTACLE_DETECTION_THRESHOLD = 150; //mg, below this threshold, the robot is considered stalled
+const LOG_TO_OSD = false;
 // CONSTANTS to control the robot during contests
 const MIN_SPEED = -100;
 const MAX_SPEED = 100;
@@ -36,6 +29,11 @@ const police = [
 const police2 = [
     "A4:4", "D4:4", "A4:4", "D4:4", "A4:4", "D4:4", "A4:4", "D4:4"
 ]
+const backward = [
+    "B:4", "", "B:4", "","B:4", "", "B:4", ""
+]
+
+
 // Parameters
 const CAMERA_SERVO = 1
 const DIRECTION_SERVO = 2
@@ -51,7 +49,7 @@ enum ExecMode {
 }
 
 // Global Variables
-const HUSKY_WIRED = false; // true if the HuskyLens is wired with I2C
+const HUSKY_WIRED = true; // true if the HuskyLens is wired with I2C
 let EXEC_MODE = ExecMode.WiredMode; // change this to WiredMode in order to have the logging on serial
 let cyclesCount = 0;
 let initialized = false;
@@ -64,6 +62,15 @@ let vision = new vision_ns.VisionProcessor(
 );
 vision.verbose = true
 //let arena = new position.ArenaMap();
+const motionDetector = new motion.MotionDetector();
+if (ENABLE_OBSTACLE_DETECTION) {
+    motionDetector.setOnBlockedCallback(() => {
+        robot.handleBlockedState();
+    });
+    motionDetector.setOnMovingCallback(() => {
+        robot.handleMovingHeartbeat();
+    });
+}
 
 
 function init() {
@@ -78,7 +85,8 @@ function init() {
     // Initialize servo controller
     ServoController.init()
     ServoController.centerAllServos()
-    ServoController.testAllServos([CAMERA_SERVO, DIRECTION_SERVO])
+    // stop punching the camera
+    ServoController.testAllServos([DIRECTION_SERVO])
     MotorController.testAllMotors([GRABBER_MOTOR, SPEED_MOTOR])
     ServoController.setServo(CAMERA_SERVO, -10) // tilt the camera a bit down
 
@@ -96,9 +104,6 @@ function init() {
             logger.log("Camera connected");
         }
     }
-    // Disable Bluetooth for the moment
-    // pxt build > error: conflict on yotta setting microbit-dal.bluetooth.enabled between extensions radio and bluetooth
-    // initBluetooth();
     // Initialize Radio transmition with Game Server
     if (EXEC_MODE == ExecMode.GameMode || EXEC_MODE == ExecMode.WiredMode) {
         initGameControl();
@@ -106,7 +111,6 @@ function init() {
     }
     initialized = true;
     logger.log("Initialization completed");
-    //test_cybertruckjs.testGetDistance()
 }
 
 init();
@@ -144,20 +148,20 @@ loops.everyInterval(3000, onEvery3s);
 loops.everyInterval(5000, onEvery5s);
 
 function onForever() {
-    // Infinite loop (frequency = ?? Hz)
+    // Infinite loop : this should contain time-critical functions, and not any pause
     if (!initialized) { // https://support.microbit.org/support/solutions/articles/19000053084-forever-runs-before-onstart-finishes
         return;
     }
     cyclesCount++;
-    //logger.log("Cycle " + cyclesCount + " camera mode " + vision.mode);
-    // TO DO : check if Huskylens capture frequency should be lower, like scheduled
     vision.refresh(); 
-    // TO DO : test incrementally all stages    
-    // position.updateSensors();
     //arena.updateRobotPosition(vision.tags, input.compassHeading());
     robot.updateObjective();
     robot.computeNextWaypoint();
     motion.goToWaypoint();
+    if (ENABLE_OBSTACLE_DETECTION)
+    	motionDetector.update();
+    if (ENABLE_OSD_DISPLAY)
+    	logger.update_osd();
 }
 
 // best effort loop
