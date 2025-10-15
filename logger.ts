@@ -110,7 +110,11 @@ namespace logger {
     export function write_telemetry() {
         //  Log telemetry data to datalogger
         if ([ExecMode.MakeCode, ExecMode.WiredMode].indexOf(EXEC_MODE) >= 0) {
-            datalogger.log(datalogger.createCV("balls", vision.balls.length))
+            datalogger.log(
+                datalogger.createCV("state", robot.state),
+                datalogger.createCV("balls", vision.balls.length),
+                datalogger.createCV("motion", motionDetector.motionIntensity)
+            )
         }
     }
 

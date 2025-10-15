@@ -18,13 +18,6 @@ namespace motion {
     const cruiseLinearSpeed = 30 // cm/s
     const spinSpeed = 50
     const spinAngularSpeed = 20 // degree/s
-    export const clearanceMoves = [
-        { throttle: fullSpeed * -1, steering:   0, duration: 3000 },
-        { throttle: fullSpeed * -1, steering: -45, duration: 3000 },
-        { throttle: fullSpeed * -1, steering:  45, duration: 3000 },
-        { throttle: fullSpeed * -1, steering: -90, duration: 3000 },
-        { throttle: fullSpeed * -1, steering:  90, duration: 3000 },
-        ];
     export const clearanceMovesSequences = [
         [{ throttle: fullSpeed * -1, steering: -90, duration: 1000 },
         { throttle: fullSpeed * -1, steering: 0, duration: 1000 },
@@ -65,21 +58,20 @@ namespace motion {
                 s = s * -1
             // distance in cm, cruiseLinearSpeed in cm/s, result in milliseconds
             let runtime = Math.abs((distance / cruiseLinearSpeed) *1000)
-            makeaMove(fullSpeed * -1, 0, runtime)
+            doFreeMove(fullSpeed * -1, 0, runtime)
     }
     // Arbitrary sequence of movements
     export function doFreeMoveSequence(moves: { throttle: number; steering: number, duration: number }[]) {
         for (let i = 0; i < moves.length; i++) {
             let move = moves[i];
-            makeaMove(move.throttle, move.steering, move.duration)
+            doFreeMove(move.throttle, move.steering, move.duration)
         }
     }
-
     // Arbitrary movement : warning : BLOCKING function
-    export function makeaMove(throttle: number, steering: number, duration: number) {
+    export function doFreeMove(throttle: number, steering: number, duration: number) {
         try {
             motionMode = MotionMode.Free
-            logger.log(`Free move throttle: ${throttle} steering: ${steering}  duration: ${duration}`)
+            logger.log(`Free move throttle: ${throttle} steering: ${steering} duration: ${duration}`)
             setWheelSteering(steering)
             setThrottle(throttle)
             pause(duration)
@@ -215,8 +207,8 @@ namespace motion {
         private onMovingCallback: (() => void) | null = null
         // constants
         private readonly MAX_SAMPLES = 5
-        private readonly CHECK_INTERVAL = 300 // 1 seconds
-        private readonly BLOCKED_THRESHOLD = 150 // mg above baseline when blocked
+        private readonly CHECK_INTERVAL = 500 // 0.5 second
+        private readonly BLOCKED_THRESHOLD = OBSTACLE_DETECTION_THRESHOLD // mg above baseline when blocked
         private readonly MIN_THROTTLE_FOR_MOTION = 20; // Minimum throttle to expect motion
         constructor() {
         }

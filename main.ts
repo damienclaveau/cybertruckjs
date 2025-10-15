@@ -6,6 +6,7 @@ const OBJECT_LOST_DELAY = 1; // second
 // CONSTANTS to control the robot during tests
 const ENABLE_OBSTACLE_DETECTION = true; // Set to true only if obstacle detection features are needed
 const ENABLE_OSD_DISPLAY = true; // Set to false to disable variable display on Husky Lens
+const OBSTACLE_DETECTION_THRESHOLD = 150; //mg, below this threshold, the robot is considered stalled
 const LOG_TO_OSD = false;
 // CONSTANTS to control the robot during contests
 const MIN_SPEED = -100;
