@@ -16,10 +16,10 @@ const MUTE_MUSIC = true
 class Robot {
     state: number
     previousState: number
-    timeWhenLostBall = 0;
-    lastBallSeenOnTheLeft = false;
-    lastUnblockingAttempt = 0;
-    //waypoint: motion.Waypoint
+    timeWhenLostBall: number = 0;
+    lastBallSeenOnTheLeft: boolean = false;
+    lastUnblockingAttempt: number = 0;
+    grabbing: boolean = false;
     constructor() {
         this.state = RobotState.waiting
     }
@@ -30,11 +30,23 @@ class Robot {
             updateMusic(this.state)
             logger.log("Robot State changed : " + this.state)
             switch (this.state) {
-                case RobotState.atHome:
                 case RobotState.stopped:
-                    break;                
+                    MotorController.setMotor(SPEED_MOTOR, 0)
+                    ServoController.setServo(DIRECTION_SERVO, 0)
+                    this.setGrabbing(false)
+                    break;
+                case RobotState.atHome:
+                    UTBBot.newBotStatus(UTBBotCode.BotStatus.MISSION_COMPLETED)
+                    MotorController.setMotor(SPEED_MOTOR, 0)
+                    ServoController.setServo(DIRECTION_SERVO, 0)
+                    this.setGrabbing(false)
+                    break;
+                case RobotState.unblocking:
+                    this.setGrabbing(false);
+                    break;
                 case RobotState.trackingBall:
                 case RobotState.searchingBalls:
+                    this.setGrabbing(true)
                     if (HUSKY_WIRED) {
                         vision.setMode(protocolAlgorithm.ALGORITHM_COLOR_RECOGNITION)
                         vision.setKind(vision_ns.ObjectKind.Ball)
@@ -43,37 +55,41 @@ class Robot {
                 case RobotState.waiting:
                 case RobotState.searchingHome:
                 case RobotState.goingHome:
+                    this.setGrabbing(false)
                     if (HUSKY_WIRED) {
                         vision.setMode(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION)
                         vision.setKind(vision_ns.ObjectKind.QRcode)
                     }
                     break
-                case RobotState.atHome:
-                    UTBBot.newBotStatus(UTBBotCode.BotStatus.MISSION_COMPLETED)
-                    break
                 default:
                     break
             }
-            
+        }
+    }
 
+    private setGrabbing(grab: boolean) {
+        if (this.grabbing != grab) {
+            this.grabbing = grab
+            if (this.grabbing) {
+                MotorController.setMotor(GRABBER_MOTOR, GRAB_SPEED) //grab
+                if (EXEC_MODE == ExecMode.MakeCode)
+                    servos.P2.run(100) // for visual simulation
+            }
+            else {
+                MotorController.setMotor(GRABBER_MOTOR, 0) //stop grabbing
+                if (EXEC_MODE == ExecMode.MakeCode)
+                    servos.P2.run(0) // for visual simulation
+            }
         }
     }
 
     // Externel explicit state changes
     public doStart() {
         logger.log("Game started at " + bricksGame.startTime + " . Starting collecting balls...")
-        MotorController.setMotor(GRABBER_MOTOR, GRAB_SPEED) //grab
-        if (EXEC_MODE == ExecMode.MakeCode)
-            servos.P2.run(100) // for visual simulation
         this.setState(RobotState.searchingBalls)
     }
     public doStop() {
         logger.log("Game Stopped. Stopping collecting balls.")
-        MotorController.setMotor(GRABBER_MOTOR, 0) //stop grabbing
-        MotorController.setMotor(SPEED_MOTOR, 0) //stop moving
-        ServoController.centerAllServos()
-        if (EXEC_MODE==ExecMode.MakeCode)
-            servos.P2.run(0) // for visual simulation
         this.setState(RobotState.stopped)
     }
     public askGoingHome() {
@@ -120,8 +136,8 @@ class Robot {
         if (this.state == RobotState.searchingBalls) {
             if (vision.balls.length > 0) {
                 logger.log("Found Balls on screen : " + vision.balls.length)
+                // wait a bit more for the most centered ball to be "in-axis" ???
                 this.setState(RobotState.trackingBall)
-                // TO DO define waypoint to the closest or the most centered ball
             }
             else {
                 logger.log("Keep searching balls...")
@@ -150,11 +166,17 @@ class Robot {
                 this.setState(RobotState.goingHome);
             }
         }
-
-        //  Condition 2 : ...
-
-        //  Condition 3 : ...
-
+        // while heading to the Home Tag, stop when arrived close enough
+        if (this.state == RobotState.goingHome) {
+            let vo = vision.getQRCode(vision_ns.QRcodeId.Home)
+            if (vo != null) {
+                if (vo.getDistanceInCm() < 30) // visual size of a QR code just in front of the Bot
+                    this.setState(RobotState.atHome);
+            }
+            else
+                // Home Tag was lost
+                this.setState(RobotState.searchingHome);
+        }
     }
 
     // Motion decision
@@ -162,7 +184,7 @@ class Robot {
     // Determine the next waypoint to reach, and linear and angular velocities to reach it
     // if tracking a VisualObject : compute the angle compared to screen center
     // if heading blindly to a direction : compute the angle compared to compass orientation
-    // if explicit movement (spinRight, spinLeft, ...) : use the compass too
+    // if explicit movement (spinRight, spinLeft, ...) : use the compass or a timer (cf FreeMove)
     public computeNextWaypoint() {
         switch (this.state) {
             case RobotState.stopped:
@@ -173,9 +195,9 @@ class Robot {
                 // wait 200ms when losing the ball before spinning around
                 if (this.timeWhenLostBall + WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS < control.millis()) {
                     if (this.lastBallSeenOnTheLeft) {
-                        motion.setWaypoint(100, -60)
+                        motion.setWaypoint(MAX_SPEED, -60)
                     } else {
-                        motion.setWaypoint(100, 60)
+                        motion.setWaypoint(MAX_SPEED, 60)
                     }
                 } else {
                     motion.setWaypoint(0, 0)
@@ -230,14 +252,28 @@ class Robot {
                 } else if (Math.abs(steeringAngle) > 10 && closestBall.y > 120) {
                     steeringAngle = ballAngle * 3
                 }
-                motion.setWaypoint(100, steeringAngle)
+                motion.setWaypoint(MAX_SPEED, steeringAngle)
                 logger.log("Closest ball at distance ~" + closestBall.getDistanceInCm() + "cm, angle=" + closestBall.getAngleFromX() + " steering angle " + steeringAngle)
                 break
             case RobotState.goingHome:
                 // waypoint = QR code on Camera
-                let qr = vision.getQRCode(vision_ns.QRcodeId.Home)
-                if (qr != null) {
-                    motion.setWaypoint(qr.getDistanceInCm(), qr.getAngle())
+                let tag = vision.getQRCode(vision_ns.QRcodeId.Home)
+                if (tag != null) {
+                    // Reduce the speed when approaching the Home
+                    let throttle = MAX_SPEED
+                    if (tag.getDistanceInCm() < 60){
+                        throttle = MAX_SPEED / 2
+                    }
+                    // Increase the angle  when approaching the tag
+                    const tagAngle = tag.getAngleFromX()
+                    let steeringAngle = tagAngle * 1.5
+                    if (Math.abs(steeringAngle) <= 10) {
+                        steeringAngle = tagAngle
+                    } else if (Math.abs(steeringAngle) > 10 && tag.getDistanceInCm() < 60) {
+                        steeringAngle = tagAngle * 3
+                    }
+                    motion.setWaypoint(throttle, steeringAngle)
+                    logger.log("Going to Home at distance ~" + tag.getDistanceInCm() + "cm, angle=" + tag.getAngleFromX() + " steering angle " + steeringAngle)
                 }
                 break
             default:
