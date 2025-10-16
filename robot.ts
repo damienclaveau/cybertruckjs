@@ -12,6 +12,8 @@ enum RobotState {
 const GRAB_SPEED = -70
 const WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS = 200
 const MUTE_MUSIC = true
+const TILT_FOR_BALLS = -10
+const TILT_FOR_TAGS = 0
 
 class Robot {
     state: number
@@ -47,6 +49,7 @@ class Robot {
                 case RobotState.trackingBall:
                 case RobotState.searchingBalls:
                     this.setGrabbing(true)
+                    ServoController.setServo(CAMERA_SERVO, TILT_FOR_BALLS) // tilt the camera a bit down
                     if (HUSKY_WIRED) {
                         vision.setMode(protocolAlgorithm.ALGORITHM_COLOR_RECOGNITION)
                         vision.setKind(vision_ns.ObjectKind.Ball)
@@ -56,6 +59,7 @@ class Robot {
                 case RobotState.searchingHome:
                 case RobotState.goingHome:
                     this.setGrabbing(false)
+                    ServoController.setServo(CAMERA_SERVO, TILT_FOR_TAGS)
                     if (HUSKY_WIRED) {
                         vision.setMode(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION)
                         vision.setKind(vision_ns.ObjectKind.QRcode)
