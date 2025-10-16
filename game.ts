@@ -40,7 +40,7 @@ class BricksGame {
         logger.log("Robot in Slave mode");
     }
     public doStart() {
-        if (this.mode == GameMode.Slave) {
+        if (true){//this.mode == GameMode.Slave) {
             this.setState(GameState.Started)
             this.startTime = control.millis()
             robot.doStart()
