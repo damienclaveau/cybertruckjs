@@ -19,14 +19,20 @@ namespace motion {
     const spinSpeed = 50
     const spinAngularSpeed = 20 // degree/s
     export const clearanceMovesSequences = [
+        [{ throttle: fullSpeed * -1, steering:   0, duration: 1000 },
+         { throttle: fullSpeed *  1, steering:  90, duration: 1000 }
+         ],
+        [{ throttle: fullSpeed * -1, steering:   0, duration: 1000 },
+         { throttle: fullSpeed *  1, steering: -90, duration: 1000 }
+        ],
         [{ throttle: fullSpeed * -1, steering: -90, duration: 1000 },
-        { throttle: fullSpeed * -1, steering: 0, duration: 1000 },
-        { throttle: fullSpeed * 1, steering: 90, duration: 1500 }],
-        [{ throttle: fullSpeed * -1, steering: 90, duration: 1000 },
-        { throttle: fullSpeed * -1, steering: 0, duration: 1000 },
-        { throttle: fullSpeed * 1, steering: -90, duration: 1500 }],
-        [{ throttle: fullSpeed * -1, steering: 0, duration: 2000 },
-            { throttle: fullSpeed * 1, steering: 90, duration: 3000 }]
+         { throttle: fullSpeed * -1, steering:   0, duration: 1000 },
+         { throttle: fullSpeed *  1, steering:  90, duration: 1500 }
+         ],
+        [{ throttle: fullSpeed * -1, steering:  90, duration: 1000 },
+         { throttle: fullSpeed * -1, steering:   0, duration: 1000 },
+         { throttle: fullSpeed *  1, steering: -90, duration: 1500 }
+         ]
     ];
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Motor Control

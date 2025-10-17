@@ -1,6 +1,6 @@
 // Timing Constants
-const GAME_DURATION = 4000; // seconds
-const DELAY_TO_GO_HOME = 0; // seconds
+const GAME_DURATION = 4000; // seconds !!! As long as we don't handle the Stop/Danger instructions correctly, this is one way to go baack to home
+const DELAY_TO_GO_HOME = 0; // seconds 
 const OBJECT_LOST_DELAY = 1; // second
 
 // CONSTANTS to control the robot during tests
@@ -61,7 +61,7 @@ let vision = new vision_ns.VisionProcessor(
     vision_ns.ObjectKind.Ball
 );
 vision.verbose = true
-//let arena = new position.ArenaMap();
+const arena = new position.ArenaMap();
 const motionDetector = new motion.MotionDetector();
 if (ENABLE_OBSTACLE_DETECTION) {
     motionDetector.setOnBlockedCallback(() => {

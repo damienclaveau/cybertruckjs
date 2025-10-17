@@ -2,7 +2,7 @@
 // Uses QR codes placed at arena corners for triangulation and position estimation
 
 namespace position {
-    
+
     export function updateSensors() {
         //  Update Compass direction, current speed, deviation, commands coming from Bluetooth, ...
         //  TO DO Compute current position with sensor fusion https://github.com/micropython-IMU/micropython-fusion/tree/master
@@ -18,7 +18,7 @@ namespace position {
 
     // re-compute the occupancy grid : QRCodes cardinals, home location, balls clusters, robots
     // approximate the Robot orientation and position
-    
+
     // Arena Configuration
     const ARENA_WIDTH = 130; // cm (260 for the 4 players game)
     const ARENA_HEIGHT = 130; //  
@@ -58,7 +58,7 @@ namespace position {
             this.initializeQRPositions();
             // Initialize occupancy grid
             this.gridWidth = Math.ceil(ARENA_WIDTH / this.gridResolution);
-            this.gridHeight = Math.ceil(ARENA_HEIGHT / this.gridResolution); 
+            this.gridHeight = Math.ceil(ARENA_HEIGHT / this.gridResolution);
             this.occupancyGrid = [];
             for (let i = 0; i < this.gridHeight; i++) {
                 this.occupancyGrid[i] = []; // Initialize each row
@@ -157,13 +157,39 @@ namespace position {
             for (let i = 0; i < qrCodes.length - 1; i++) {
                 const leftQR = qrCodes[i];
                 const rightQR = qrCodes[i + 1];
-                if (this.validateQRCodeRelationship(leftQR, rightQR, compassHeading)) {
+                if (this.validateQRCodeRelationship(leftQR, rightQR)) {
                     // QR codes are consistent with expected arena layout
                     this.robotPose.confidence = Math.min(100, this.robotPose.confidence + 10);
                 }
             }
         }
-        private validateQRCodeRelationship(leftQR: vision_ns.VisualObject, rightQR: vision_ns.VisualObject, heading: number): boolean {
+
+        public lookingAtCorner(qrCodes: vision_ns.VisualObject[]): string {
+            // Use pairs of QR codes to determine the corner
+            if (qrCodes.length != 2) return null;
+            const leftQR = qrCodes[0];
+            const rightQR = qrCodes[1];
+            if (leftQR.id == rightQR.id) return null // Facing 2 extremities of one wall ?
+            // 1st possible left Tag
+            const leftQRPos1 = this.qrPositions.find(pos => pos.id === leftQR.id)
+            if (leftQRPos1) {
+                // find matching right Tag in the same corner/cardinal 
+                const rightQRPos1 = this.qrPositions.find(pos => pos.id === rightQR.id && pos.cardinal == leftQRPos1.cardinal)
+                if (rightQRPos1) return rightQRPos1.cardinal
+                else {
+                    // 2nd possible left Tag
+                    const leftQRPos2 = this.qrPositions.find(pos => pos.id === leftQRPos1.id && pos.cardinal != leftQRPos1.cardinal)
+                    if (leftQRPos2) {
+                        // find matching right Tag in the same corner/cardinal
+                        const rightQRPos2 = this.qrPositions.find(pos => pos.id === rightQR.id && pos.cardinal == leftQRPos2.cardinal)
+                        if (rightQRPos2) return rightQRPos2.cardinal
+                    }
+                }
+            }
+            return null
+        }
+
+        private validateQRCodeRelationship(leftQR: vision_ns.VisualObject, rightQR: vision_ns.VisualObject): boolean {
             const leftPos = this.getQRPositionById(leftQR.id);
             const rightPos = this.getQRPositionById(rightQR.id);
             if (!leftPos || !rightPos) return false;
@@ -273,5 +299,5 @@ namespace position {
             }
         }
     }
-    
+
 }

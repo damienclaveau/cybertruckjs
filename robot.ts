@@ -11,6 +11,7 @@ enum RobotState {
 
 const GRAB_SPEED = -70
 const WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS = 200
+const WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_TARGET_MS = 200
 const MUTE_MUSIC = true
 const TILT_FOR_BALLS = -10
 const TILT_FOR_TAGS = 0
@@ -19,6 +20,7 @@ class Robot {
     state: number
     previousState: number
     timeWhenLostBall: number = 0;
+    timeWhenLostTarget: number = 0;
     lastBallSeenOnTheLeft: boolean = false;
     lastUnblockingAttempt: number = 0;
     grabbing: boolean = false;
@@ -45,6 +47,8 @@ class Robot {
                     break;
                 case RobotState.unblocking:
                     this.setGrabbing(false);
+                    ServoController.setServo(CAMERA_SERVO, TILT_FOR_TAGS) // camera is horizontal
+                    // Idea here : switch the camera to Tag mode, in order to stop rushing to a ball
                     break;
                 case RobotState.trackingBall:
                 case RobotState.searchingBalls:
@@ -59,7 +63,7 @@ class Robot {
                 case RobotState.searchingHome:
                 case RobotState.goingHome:
                     this.setGrabbing(false)
-                    ServoController.setServo(CAMERA_SERVO, TILT_FOR_TAGS)
+                    ServoController.setServo(CAMERA_SERVO, TILT_FOR_TAGS) // camera is horizontal
                     if (HUSKY_WIRED) {
                         vision.setMode(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION)
                         vision.setKind(vision_ns.ObjectKind.QRcode)
@@ -105,7 +109,7 @@ class Robot {
         logger.log("Going home. If location unknown, look for it.")
         // no more balls, or time is over, or acknolewdging danger mode
         this.setState(RobotState.searchingHome)
-        
+
     }
 
     // try to get out of a blocked state
@@ -131,10 +135,10 @@ class Robot {
         //logger.log("Remaining time " + bricksGame.remainingTime())
         if ((bricksGame.remainingTime() < DELAY_TO_GO_HOME)
             &&((this.state == RobotState.searchingBalls)
-            || (this.state == RobotState.trackingBall))) {
+                || (this.state == RobotState.trackingBall))) {
             this.doGoHome()
         }
-        
+
         // While waiting for the game to start
         // we could also spin left/right and look at the balls and QR Codes
         if (this.state == RobotState.searchingBalls) {
@@ -174,12 +178,14 @@ class Robot {
         if (this.state == RobotState.goingHome) {
             let vo = vision.getQRCode(vision_ns.QRcodeId.Home)
             if (vo != null) {
-                if (vo.getDistanceInCm() < 30) // visual size of a QR code just in front of the Bot
+                if (vo.getDistanceInCm() < 40) // visual size of a QR code just in front of the Bot
                     this.setState(RobotState.atHome);
             }
-            else
+            else {
                 // Home Tag was lost
+                this.timeWhenLostTarget = control.millis()
                 this.setState(RobotState.searchingHome);
+            }
         }
     }
 
@@ -207,40 +213,34 @@ class Robot {
                     motion.setWaypoint(0, 0)
                 }
                 break
-            
+
             case RobotState.unblocking:
-                // try the next possible move to get out of the blocked state
-                this.lastUnblockingAttempt++;
-                this.lastUnblockingAttempt = this.lastUnblockingAttempt % motion.clearanceMovesSequences.length
+                // force recognizing QR codes
+                vision.refreshForced(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION, vision_ns.ObjectKind.QRcode)
+                const corner = arena.lookingAtCorner(vision.tags)
+                // if in a CORNER, try in priority the backward moves
+                if (corner) {
+                    this.lastUnblockingAttempt == 0
+                    this.lastUnblockingAttempt = this.lastUnblockingAttempt % 2
+                    logger.log("Corner detected " + corner + ", attempting move #" + this.lastUnblockingAttempt)
+                }
+                // try the all possible moves to get out of the blocked state
+                else {
+                    this.lastUnblockingAttempt++;
+                    this.lastUnblockingAttempt = this.lastUnblockingAttempt % motion.clearanceMovesSequences.length
+                    logger.log("Unknown obstacle, attempting move #" + this.lastUnblockingAttempt)
+                }
                 motion.doFreeMoveSequence(motion.clearanceMovesSequences[this.lastUnblockingAttempt])
                 this.setState(this.previousState);
                 break;
 
             case RobotState.searchingHome:
-                /*
-                // waypoint = approximate direction of the base camp
-                if (arena.isPositionReliable()) {
-                    const distanceToBase = arena.getDistanceToBase();
-                    const bearingToBase = arena.getBearingToBase();
-                    const robotPose = arenaMap.getRobotPose();
-                    // Imperative mode
-                    // Calculate turn angle needed
-                    let turnAngle = bearingToBase - robotPose.heading;
-                    if (Math.abs(turnAngle) > 10)
-                        // Normalize angle to -180 to 180
-                        while (turnAngle > 180) turnAngle -= 360;
-                        while (turnAngle < -180) turnAngle += 360;
-                        motion.spinAround(turnAngle);
-                        //motion.setWaypoint(distanceToBase, turnAngle)
-                        logger.log(`Base: ${Math.round(distanceToBase)}cm at ${Math.round(bearingToBase)}°`);
-                        // Auto controlled mode
-                        //motion.setWaypoint(distanceToBase, bearingToBase)
-                    }
+                // wait 200ms when losing the ball before spinning around
+                if (this.timeWhenLostTarget + WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_TARGET_MS < control.millis()) {
+                    motion.setWaypoint(60, 90) // moderate speed, spinning
                 } else {
-                    logger.log("Position uncertain - looking for QR codes...");
-                    //motion.spinAround(10)
+                    motion.setWaypoint(0, 0)
                 }
-                */
                 break
             case RobotState.trackingBall:
                 let closestBall = vision.balls[0];
@@ -250,6 +250,7 @@ class Robot {
                     }
                 }
                 const ballAngle = closestBall.getAngleFromX()
+                this.lastBallSeenOnTheLeft = (ballAngle < 0)
                 let steeringAngle = ballAngle * 1.5
                 if (Math.abs(steeringAngle) <= 10) {
                     steeringAngle = ballAngle
