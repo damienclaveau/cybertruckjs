@@ -13,9 +13,12 @@ namespace vision_ns {
     export const BALL_REFERENCE_DISTANCE = 50; // (cm)
     export const BALL_REFERENCE_FRAMESIZE = 30; // (pixels) width and height of a ball frame at 50 cm distance
     export const BALL_DISTANCE_RATIO = BALL_REFERENCE_DISTANCE / BALL_REFERENCE_FRAMESIZE;
-    export const TAG_REFERENCE_DISTANCE = 50; // (cm)
-    export const TAG_REFERENCE_FRAMESIZE = 30; // (pixels) width and height of a ball frame at 50 cm distance
-    export const TAG_DISTANCE_RATIO = TAG_REFERENCE_DISTANCE / TAG_REFERENCE_FRAMESIZE;
+    // for Tags, the framesize seems reliable
+    const TAG_VISUAL_RATIO_1 = { size: 45, distance: 110 };
+    const TAG_VISUAL_RATIO_2 = { size: 155, distance: 30 };
+    // Calculate proportionality constants from the visual ratios
+    const TAG_PROPORTIONALITY_CONSTANT = (TAG_VISUAL_RATIO_1.size * TAG_VISUAL_RATIO_1.distance + TAG_VISUAL_RATIO_2.size * TAG_VISUAL_RATIO_2.distance) / 2;
+
     // Screen Side Class
     export enum ScreenSide {
         Left,
@@ -113,7 +116,7 @@ namespace vision_ns {
             const size = Math.sqrt(this.w ** 2 + this.h ** 2); // frame diagonal
             switch (this.kind) {
                 case ObjectKind.Ball: return (BALL_REFERENCE_FRAMESIZE * BALL_REFERENCE_DISTANCE) / size;
-                case ObjectKind.QRcode: return (TAG_REFERENCE_FRAMESIZE * TAG_REFERENCE_DISTANCE) / size;
+                case ObjectKind.QRcode: return TAG_PROPORTIONALITY_CONSTANT / size;
                 default: return Infinity;
             }
         }
@@ -139,9 +142,16 @@ namespace vision_ns {
 
         // Convert visual distance to real distance
         getDistanceInCm() {
-            const deltaX = this.x - HUSKY_SCREEN_ORIGIN_X;
-            const deltaY = this.y - HUSKY_SCREEN_ORIGIN_Y;
-            return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            switch (this.kind) {
+                case ObjectKind.Ball: // object ponctuel, on se refere au decalage par rapport au centre
+                    const deltaX = this.x - HUSKY_SCREEN_ORIGIN_X;
+                    const deltaY = this.y - HUSKY_SCREEN_ORIGIN_Y;
+                    return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                case ObjectKind.QRcode: // objet rectangulaire, la size est relevant
+                    return TAG_PROPORTIONALITY_CONSTANT / Math.sqrt(this.w * this.w + this.h * this.h);
+                default:
+                    return -1;
+            }
         }
 
         // Compute distance of a Ball based on Y position on screen
