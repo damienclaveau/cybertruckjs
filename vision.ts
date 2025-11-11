@@ -243,12 +243,11 @@ namespace vision_ns {
             // Change temporarily the mode and the kind to refresh all objects once
             const saveMode = this.mode;
             const saveKind = this.kind;
-            this.setMode(mode);
-            this.setKind(kind);
-            pause(100);
+            if (mode != this.mode) { this.setMode(mode);}
+            if (kind != this.kind) { this.setKind(kind);}
             this.refresh();
-            this.setMode(saveMode);
-            this.setKind(saveKind);
+            if (saveMode != this.mode) { this.setMode(saveMode);}
+            if (saveKind != this.kind) { this.setKind(saveKind);}
         }
 
         // Capture a new video frame and analyze it : is there 1 ball, no ball, a Tag, an obstacle or nothing ?
@@ -375,6 +374,24 @@ namespace vision_ns {
             }
             return bestBall;
         }
+
+
+        getClosestTag(): VisualObject | null {
+            if (this.tags.length === 0) {
+                return null;
+            }
+            let bestTag: VisualObject | null = null;
+            let bestDistance = Infinity;
+            for (const tag of this.tags) {
+                const distance = tag.getDistanceInPixels()
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestTag = tag;
+                }
+            }
+            return bestTag;
+        }
+
     }
 
 }

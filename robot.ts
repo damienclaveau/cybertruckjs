@@ -13,7 +13,7 @@ const GRAB_SPEED = -70
 const WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS = 200
 const WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_TARGET_MS = 200
 const MUTE_MUSIC = true
-const TILT_FOR_BALLS = -10
+const TILT_FOR_BALLS = -7
 const TILT_FOR_TAGS = 0
 
 class Robot {
@@ -48,7 +48,10 @@ class Robot {
                 case RobotState.unblocking:
                     this.setGrabbing(false);
                     ServoController.setServo(CAMERA_SERVO, TILT_FOR_TAGS) // camera is horizontal
-                    // Idea here : switch the camera to Tag mode, in order to stop rushing to a ball
+                    if (HUSKY_WIRED) {
+                        vision.setMode(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION)
+                        vision.setKind(vision_ns.ObjectKind.QRcode)
+                    }
                     break;
                 case RobotState.trackingBall:
                 case RobotState.searchingBalls:
@@ -205,9 +208,9 @@ class Robot {
                 // wait 200ms when losing the ball before spinning around
                 if (this.timeWhenLostBall + WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS < control.millis()) {
                     if (this.lastBallSeenOnTheLeft) {
-                        motion.setWaypoint(MAX_SPEED, -60)
+                        motion.setWaypoint(SPIN_SPEED, -90)
                     } else {
-                        motion.setWaypoint(MAX_SPEED, 60)
+                        motion.setWaypoint(SPIN_SPEED, 90)
                     }
                 } else {
                     motion.setWaypoint(0, 0)
@@ -216,12 +219,13 @@ class Robot {
 
             case RobotState.unblocking:
                 // force recognizing QR codes
+                pause(300); // pause required for the Huskylens to process video
                 vision.refreshForced(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION, vision_ns.ObjectKind.QRcode)
                 const corner = arena.lookingAtCorner(vision.tags)
                 // if in a CORNER, try in priority the backward moves
                 if (corner) {
-                    this.lastUnblockingAttempt == 0
-                    this.lastUnblockingAttempt = this.lastUnblockingAttempt % 2
+                    this.lastUnblockingAttempt++
+                    this.lastUnblockingAttempt = this.lastUnblockingAttempt % 2 // backward moves are the first 2 in the list
                     logger.log("Corner detected " + corner + ", attempting move #" + this.lastUnblockingAttempt)
                 }
                 // try the all possible moves to get out of the blocked state
@@ -237,7 +241,7 @@ class Robot {
             case RobotState.searchingHome:
                 // wait 200ms when losing the ball before spinning around
                 if (this.timeWhenLostTarget + WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_TARGET_MS < control.millis()) {
-                    motion.setWaypoint(60, 90) // moderate speed, spinning
+                    motion.setWaypoint(SPIN_SPEED, 90) // moderate speed, spinning
                 } else {
                     motion.setWaypoint(0, 0)
                 }

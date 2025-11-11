@@ -212,6 +212,7 @@ namespace motion {
         private onBlockedCallback: (() => void) | null = null
         private onMovingCallback: (() => void) | null = null
         // constants
+        // The main loop runs approx at max 10Hz, so we can capture up to 5 samples every 500ms
         private readonly MAX_SAMPLES = 5
         private readonly CHECK_INTERVAL = 500 // 0.5 second
         private readonly BLOCKED_THRESHOLD = OBSTACLE_DETECTION_THRESHOLD // mg above baseline when blocked
@@ -272,7 +273,7 @@ namespace motion {
                     validSamples++
                 }
             }
-            if (validSamples < 5) return // Need enough valid samples
+            if (validSamples < 3) return // Need enough valid samples, ideally 5 over a period 0f 0.5s
             this.motionIntensity = sum / validSamples // we should do Minus substract the gyro noise
             logger.log(`Average Motion: ${Math.round(this.motionIntensity)}mg`)
             // Check if blocked: motor throttle is high, but motion intensity is low

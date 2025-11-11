@@ -58,7 +58,9 @@ namespace logger {
     }
 
     function get_log_msg(logmsg: string): string {
-        return "[" + control.deviceName() + "@" + ("" + ("" + formatElapsedTime(control.millis()))) + " (" + cyclesCount + ")]" + " " + logmsg
+        //return "[" + control.deviceName() + "@" + ("" + ("" + formatElapsedTime(control.millis()))) + " (" + cyclesCount + ")]" + " " + logmsg
+        // Get cleaner metrics in MakeCode
+        return "[" + control.deviceName() + "]" + " " + logmsg
     }
     // Logging function to Serial Monitor or Bluetooth
     export function log(msg: string) {

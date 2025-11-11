@@ -6,11 +6,13 @@ const OBJECT_LOST_DELAY = 1; // second
 // CONSTANTS to control the robot during tests
 const ENABLE_OBSTACLE_DETECTION = true; // Set to true only if obstacle detection features are needed
 const ENABLE_OSD_DISPLAY = true; // Set to false to disable variable display on Husky Lens
-const OBSTACLE_DETECTION_THRESHOLD = 150; //mg, below this threshold, the robot is considered stalled
+// we have a better motion measurement accuracy since the main loop has been optimized
+const OBSTACLE_DETECTION_THRESHOLD = 90; //mg, below this threshold, the robot is considered stalled
 const LOG_TO_OSD = false;
 // CONSTANTS to control the robot during contests
 const MIN_SPEED = -100;
 const MAX_SPEED = 100;
+const SPIN_SPEED = 60;
 
 
 // Music constants :-)
@@ -116,14 +118,12 @@ function init() {
 init();
 
 // scheduled function calls
-function onEvery100ms() {
-    // Function called every 100ms
+function onEvery500ms() {
+    // The main loop is 4x faster when we get the I2C communication out of it
+    if (ENABLE_OSD_DISPLAY)
+        logger.update_osd();
 }
 
-function onEvery200ms() {
-    //TO DO : test this
-    //send_telemetry();
-}
 // Simulate the game countdown
 function onEvery1s() {
     if ((bricksGame.status == GameState.Started)
@@ -131,20 +131,13 @@ function onEvery1s() {
         bricksGame.doStop()
     }
 }
-function onEvery3s() {
-    // TO DO : Test this idea
-    // every 5s (maybe more often) have a look around at the QRCodes
-    // vision.refreshForced(protocolAlgorithm.ALGORITHM_TAG_RECOGNITION, vision_ns.ObjectKind.QRcode)
-}
 
 function onEvery5s() {
     logger.log("Game " + bricksGame.status+ ", Remaining time " + bricksGame.remainingTime())
 }
 
-loops.everyInterval(100, onEvery100ms);
-loops.everyInterval(200, onEvery200ms);
+loops.everyInterval(500, onEvery500ms);
 loops.everyInterval(1000, onEvery1s);
-loops.everyInterval(3000, onEvery3s);
 loops.everyInterval(5000, onEvery5s);
 
 function onForever() {
@@ -160,8 +153,6 @@ function onForever() {
     motion.goToWaypoint();
     if (ENABLE_OBSTACLE_DETECTION)
     	motionDetector.update();
-    if (ENABLE_OSD_DISPLAY)
-    	logger.update_osd();
 }
 
 // best effort loop
