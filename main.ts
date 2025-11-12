@@ -8,6 +8,7 @@ const ENABLE_OBSTACLE_DETECTION = true; // Set to true only if obstacle detectio
 const ENABLE_OSD_DISPLAY = true; // Set to false to disable variable display on Husky Lens
 // we have a better motion measurement accuracy since the main loop has been optimized
 const OBSTACLE_DETECTION_THRESHOLD = 90; //mg, below this threshold, the robot is considered stalled
+const VIBRATION_DETECTION_THRESHOLD = 600; //mg, above this threshold, the robot is considered stalled and vibrating
 const LOG_TO_OSD = false;
 // CONSTANTS to control the robot during contests
 const MIN_SPEED = -100;

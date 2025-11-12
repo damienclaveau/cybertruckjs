@@ -216,6 +216,7 @@ namespace motion {
         private readonly MAX_SAMPLES = 5
         private readonly CHECK_INTERVAL = 500 // 0.5 second
         private readonly BLOCKED_THRESHOLD = OBSTACLE_DETECTION_THRESHOLD // mg above baseline when blocked
+        private readonly VIBRATING_THRESHOLD = VIBRATION_DETECTION_THRESHOLD // mg above baseline when blocked
         private readonly MIN_THROTTLE_FOR_MOTION = 20; // Minimum throttle to expect motion
         constructor() {
         }
@@ -277,7 +278,7 @@ namespace motion {
             this.motionIntensity = sum / validSamples // we should do Minus substract the gyro noise
             logger.log(`Average Motion: ${Math.round(this.motionIntensity)}mg`)
             // Check if blocked: motor throttle is high, but motion intensity is low
-            if (this.motionIntensity < this.BLOCKED_THRESHOLD) {
+            if ((this.motionIntensity < this.BLOCKED_THRESHOLD) || (this.motionIntensity > this.VIBRATING_THRESHOLD)) {
                 logger.log(`Robot blocked! Motion: ${Math.round(this.motionIntensity)}mg`)
                 if (this.onBlockedCallback)
                     this.onBlockedCallback()
