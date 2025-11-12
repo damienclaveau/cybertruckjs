@@ -9,7 +9,13 @@ enum RobotState {
     atHome // when at home, send status  <name>:<timer> mission:safe_place_reached, wait 5s then resume
 }
 
+const ENABLE_BLIND_ATTACK = true
 const GRAB_SPEED = -70
+const ATTACK_SPINNER_SPEED = 100
+const ATTACK_SPEED = 100
+const ATTACK_WITHDRAW_SPEED = -50
+const ATTACK_DURATION_MS = 3000
+const ATTACK_WITHDRAW_DURATION_MS = 1000
 const WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_BALL_MS = 200
 const WAIT_BEFORE_SPINNING_WHEN_LOST_TRACKING_TARGET_MS = 200
 const MUTE_MUSIC = true
@@ -94,9 +100,18 @@ class Robot {
         }
     }
 
+    attack() {
+        if (!ENABLE_BLIND_ATTACK) return;
+        MotorController.setMotor(GRABBER_MOTOR, ATTACK_SPINNER_SPEED)
+        motion.doFreeMove(ATTACK_SPEED, 0, ATTACK_DURATION_MS)
+        motion.doFreeMove(ATTACK_WITHDRAW_SPEED, 0, ATTACK_WITHDRAW_DURATION_MS)
+        this.setGrabbing(true)
+        this.setGrabbing(true) //just in case it didn't properly update the first time
+    }
     // Externel explicit state changes
     public doStart() {
         logger.log("Game started at " + bricksGame.startTime + " . Starting collecting balls...")
+        this.attack()
         this.setState(RobotState.searchingBalls)
     }
     public doStop() {
